@@ -13,8 +13,8 @@ public class ServerHelper {
             DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
             String message = in.readUTF();
             ret = message.split(" ");
-            System.out.println(ret);
-            in.close();
+            System.out.println(ret[0]);
+            //in.close();
 
         } catch (IOException e) {
             System.out.println("Error while receiving message from Client");
@@ -32,7 +32,7 @@ public class ServerHelper {
                     Publish and Reply i -> invokes the same function, but reply with additional dependency.
                3.
              */
-            case "Choose": sendChosenArticle(message[1], articleList);break;
+            case "Choose": sendChosenArticle(socket, message[1], articleList);break;
             case "Publish":
             case "Reply":
                 publishToCoordinator(socket, message);break;
@@ -42,12 +42,13 @@ public class ServerHelper {
         }
     }
 
-    private static void sendChosenArticle(String ID, HashMap<Integer, String> articleList) {
+    private static void sendChosenArticle(Socket socket, String ID, HashMap<Integer, String> articleList) {
         Integer articleID = Integer.getInteger(ID);
         String article = articleList.get(articleID);
-        ///AAH how will I send this. Port of the client is unnecessarily needed. I create a scoket here and send it.
-        //Client creates a server socket and recieves the message.
-        //Let's discuss about this before I go further.
+        //Need to check this
+
+        sendMessageToClient(socket,article);
+
     }
 
     private static void publishToCoordinator(Socket socket, String[] message) {
@@ -56,10 +57,18 @@ public class ServerHelper {
     private static void sendArticlesToClient(HashMap<Integer, String> articleList, HashMap<Integer, List<Integer>> dependencyList) {
     }
 
-    public static void sendMessageToServer(Socket socket, String message) throws IOException {
-        DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-        output.writeUTF(message);
-        System.out.println("Sent to Socket");
-        output.close();
+    public static void sendMessageToClient(Socket socket, String message) {
+
+        DataOutputStream output = null;
+        try {
+            output = new DataOutputStream(socket.getOutputStream());
+            System.out.println("I'm here");
+            output.writeUTF("Sending something back to the client");
+            System.out.println("Sent to Client");
+            output.close();
+        } catch (IOException e) {
+            System.out.println("Can't send message back to the client");
+        }
+
     }
 }
