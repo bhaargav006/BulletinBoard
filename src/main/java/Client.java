@@ -4,6 +4,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 public class Client {
+    //TODO: How do I connect to a particular server
     public static void main(String[] args) throws UnknownHostException {
         System.out.println("----******Welcome to the Bulletin Board******-----");
         System.out.println("Select any number to read more about the article");
@@ -14,8 +15,7 @@ public class Client {
             Socket socket = new Socket(host, 8000);
             String message = "Choose 3";
             ClientHelper.sendMessageToServer(socket,message);
-            ///AAAAH TCP bad idea. need to create server socket here, to listen from the server.
-            //System.out.println(ClientHelper.recieveMessageFromServer(socket));
+            ClientHelper.receiveMessageFromServer(socket);
             socket.close();
 
         } catch (IOException e) {
