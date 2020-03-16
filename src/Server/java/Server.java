@@ -3,28 +3,37 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.List;
 
 public class Server {
 
-    //Send the client the data during the tcp call.
-    //Why can't we do a RMI
+
     public Server(int port) throws UnknownHostException {
+
+        HashMap<Integer, String> articleList = new HashMap<>();
+        HashMap<Integer, List<Integer>> dependencyList = new HashMap<>();
+
+        /* Getting data from the client */
         InetAddress host = InetAddress.getLocalHost();
         try {
             ServerSocket server = new ServerSocket(port);
             Socket socket = server.accept();
-            DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-            System.out.println(in.readUTF());
-            in.close();
+            String[] message = ServerHelper.receiveMessageFromClient(socket);
+            ServerHelper.processMessageFromClient(socket, message,articleList,dependencyList);
             socket.close();
             System.out.println("Socket Closed");
 
         } catch (IOException e) {
-            System.out.println("Error while receiving message from Client");
+            System.out.println("Error in the server sockets");
         }
     }
-    public static void main(String[] args) throws UnknownHostException {
+    public static void main(String[] args)  {
 
-        Server server = new Server(8000);
+        try {
+            Server server = new Server(8000);
+        } catch (UnknownHostException e) {
+            System.out.println("Host cannot be resolved");
+        }
     }
 }
