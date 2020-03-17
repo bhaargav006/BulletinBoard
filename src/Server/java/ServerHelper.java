@@ -50,7 +50,16 @@ public class ServerHelper {
         //Let's discuss about this before I go further.
     }
 
-    private static void publishToCoordinator(Socket socket, String[] message) {
+    private static void publishToCoordinator(Socket socket, String[] message) throws IOException {
+        //Message format for post and reply needs to be set when client is sending it to server?
+        //Currently I am parsing it as:
+        //POST: <Insert-message>
+        //REPLY: <ID-number> - <Insert-message>
+        //We can change this if needed.
+        DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+        output.writeUTF(message.toString());
+        System.out.println("Sent to Socket");
+        output.close();
     }
 
     private static void sendArticlesToClient(HashMap<Integer, String> articleList, HashMap<Integer, List<Integer>> dependencyList) {
