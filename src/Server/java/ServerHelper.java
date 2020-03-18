@@ -1,7 +1,5 @@
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +33,7 @@ public class ServerHelper {
             case "Choose": sendChosenArticle(message[1], articleList);break;
             case "Publish":
             case "Reply":
-                publishToCoordinator(socket, message);break;
+                publishToCoordinator(socket, message, dependencyList);break;
             case "exit": socket.close(); break;
             default:
                 System.out.println("Invalid");
@@ -50,16 +48,13 @@ public class ServerHelper {
         //Let's discuss about this before I go further.
     }
 
-    private static void publishToCoordinator(Socket socket, String[] message) throws IOException {
-        //Message format for post and reply needs to be set when client is sending it to server?
-        //Currently I am parsing it as:
-        //POST: <Insert-message>
-        //REPLY: <ID-number> - <Insert-message>
-        //We can change this if needed.
-        DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-        output.writeUTF(message.toString());
+    private static void publishToCoordinator(Socket socket1, String[] message, HashMap<Integer, List<Integer>> dependencyList) throws IOException {
+        Socket socket = new Socket(InetAddress.getLocalHost(), 9999);
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+        objectOutputStream.writeObject(dependencyList);
+        objectOutputStream.writeObject(message);
         System.out.println("Sent to Socket");
-        output.close();
+//        output.close();
     }
 
     private static void sendArticlesToClient(HashMap<Integer, String> articleList, HashMap<Integer, List<Integer>> dependencyList) {

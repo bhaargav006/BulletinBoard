@@ -1,26 +1,38 @@
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import javafx.util.Pair;
+
+import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
 public class CoordinatorHelper {
 
-    public static ArrayList<String> getServerIPAndPort(){
+    public static ArrayList<String> getServerIPAndPort() throws IOException {
         ArrayList<String> listOfServers = new ArrayList<>();
-        // Decide how to store the IP and Port information of all the servers. Preferably in a list.
+        File file = new File("serverList.properties");
+        FileInputStream fileInputStream = new FileInputStream(file);
+        Properties prop = new Properties();
+        prop.load(fileInputStream);
+
+        while(prop.keys().hasMoreElements()){
+            String server = (String)prop.keys().nextElement();
+            listOfServers.add(server.split(":")[1]);
+        }
 
         return listOfServers;
     }
 
-    public static String receiveMessageFromServer(Socket socket, HashMap<String, String> serverMessageQueue, int ID) {
+    public static Pair<String, HashMap<Integer, Integer>> receiveMessageFromServer(Socket socket, HashMap<String, String> serverMessageQueue, int ID) throws ClassNotFoundException {
         String result = null;
         int latestID = 0;
+
+        HashMap<Integer, Integer> dependencyList = null;
+
         try {
             DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-            String message = in.readUTF();
+            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+            dependencyList = (HashMap) objectInputStream.readObject();
+            String message = (String) objectInputStream.readObject();
             // Gets the latest ID depending on whether it is post or reply.
             String[] messageToSend = message.split("-");
             if(messageToSend.length > 1)
@@ -35,28 +47,25 @@ public class CoordinatorHelper {
         } catch (IOException e) {
             System.out.println("Error while receiving message from Client");
         }
-
-        return result;
+        Pair<String, HashMap<Integer, Integer>> pair = new Pair<String, HashMap<Integer, Integer>>(result, dependencyList);
+        return pair;
     }
 
     public static int getLatestID(Socket socket, String message, int ID){
         return ID += ID;
     }
 
-    public static void broadcastMessageToServers(Socket socket, String message) throws IOException {
+    public static void broadcastMessageToServers(Socket socket, String message, HashMap<Integer, Integer> dependencyList) throws IOException {
         ArrayList<String> listOfServers = getServerIPAndPort();
-        for (String server : listOfServers) {
-            String[] IPAndPort = server.split(":");
-            String IP = IPAndPort[0];
-            String port = IPAndPort[1];
-            //I think a new socket for each of the servers will be created for them to receive the message. Not sure though?
-            //Also, the dependency list should be same in all the servers, so even that should be passed to the coordinator and then passed on
-            // to other servers, no?
-            Socket serverSocket = new Socket(IP, Integer.parseInt(port));
-            DataOutputStream output = new DataOutputStream(serverSocket.getOutputStream());
-            output.writeUTF(message);
+        Enumeration enumeration = Collections.enumeration(listOfServers);
+        while(enumeration.hasMoreElements()){
+            int port = (int)enumeration.nextElement();
+            Socket serverSocket = new Socket(InetAddress.getLocalHost(), port);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(serverSocket.getOutputStream());
+            objectOutputStream.writeObject(message);
+            objectOutputStream.writeObject(dependencyList);
             System.out.println("Sent to Socket");
-            output.close();
+            objectOutputStream.close();
             serverSocket.close();
         }
     }
