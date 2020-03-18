@@ -13,7 +13,7 @@ public class Client {
         InetAddress host = InetAddress.getLocalHost();
         try {
             Socket socket = new Socket(host, 8000);
-            String message = "Choose 3";
+            String message = "Read";
             ClientHelper.sendMessageToServer(socket,message);
             ClientHelper.receiveMessageFromServer(socket);
             socket.close();

@@ -1,10 +1,7 @@
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class ServerHelper {
     public static String[] receiveMessageFromClient(Socket socket){
@@ -23,9 +20,9 @@ public class ServerHelper {
         return ret;
     }
 
-    public static void processMessageFromClient(Socket socket, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, List<Integer>> dependencyList) throws IOException {
+    public static void processMessageFromClient(Socket socket, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException {
         switch (message[0]){
-            case "Read": sendArticlesToClient(articleList,dependencyList);break;
+            case "Read": sendArticlesToClient(socket, articleList,dependencyList);break;
             /*TODO:
                1. Limit the number of TCP calls. It's VERY slow.
                2. Change this to process more than just one word for the operation.
@@ -33,7 +30,7 @@ public class ServerHelper {
                3.
              */
             case "Choose": sendChosenArticle(socket, message[1], articleList);break;
-            case "Publish":
+            case "Post":
             case "Reply":
                 publishToCoordinator(socket, message);break;
             case "exit": socket.close(); break;
@@ -63,7 +60,23 @@ public class ServerHelper {
         output.close();
     }
 
-    private static void sendArticlesToClient(HashMap<Integer, String> articleList, HashMap<Integer, List<Integer>> dependencyList) {
+    private static void sendArticlesToClient(Socket socket,HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) {
+        //Send the whole object to the client
+        ObjectOutputStream output = null;
+        try {
+            articleList.put(0,"Dummy article");
+            ArrayList<Integer> dummyList = new ArrayList<>();
+            dummyList.add(0);
+            dependencyList.put(1, dummyList);
+            output = new ObjectOutputStream(socket.getOutputStream());
+            System.out.println("I'm here");
+            output.writeObject(articleList);
+            output.writeObject(dependencyList);
+            System.out.println("Sent to Client: Article: " +  articleList.get(0) + " Dependency: " + dependencyList.get(1));
+            output.close();
+        } catch (IOException e) {
+            System.out.println("Can't send message back to the client");
+        }
     }
 
     public static void sendMessageToClient(Socket socket, String message) {
