@@ -1,7 +1,10 @@
 import java.io.*;
+import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class ServerHelper {
     public static String[] receiveMessageFromClient(Socket socket){
@@ -20,9 +23,9 @@ public class ServerHelper {
         return ret;
     }
 
-    public static void processMessageFromClient(Socket socket, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException {
+    public static void processMessageFromClient(Socket socket, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, List<Integer>> dependencyList) throws IOException {
         switch (message[0]){
-            case "Read": sendArticlesToClient(socket, articleList,dependencyList);break;
+            case "Read": sendArticlesToClient(socket,articleList,dependencyList);break;
             /*TODO:
                1. Limit the number of TCP calls. It's VERY slow.
                2. Change this to process more than just one word for the operation.
@@ -30,9 +33,9 @@ public class ServerHelper {
                3.
              */
             case "Choose": sendChosenArticle(socket, message[1], articleList);break;
-            case "Post":
+            case "Publish":
             case "Reply":
-                publishToCoordinator(socket, message);break;
+                publishToCoordinator(socket, message, dependencyList);break;
             case "exit": socket.close(); break;
             default:
                 System.out.println("Invalid");
@@ -48,16 +51,13 @@ public class ServerHelper {
 
     }
 
-    private static void publishToCoordinator(Socket socket, String[] message) throws IOException {
-        //Message format for post and reply needs to be set when client is sending it to server?
-        //Currently I am parsing it as:
-        //POST: <Insert-message>
-        //REPLY: <ID-number> - <Insert-message>
-        //We can change this if needed.
-        DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-        output.writeUTF(message.toString());
+    private static void publishToCoordinator(Socket socket1, String[] message, HashMap<Integer, List<Integer>> dependencyList) throws IOException {
+        Socket socket = new Socket(InetAddress.getLocalHost(), 9999);
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+        objectOutputStream.writeObject(dependencyList);
+        objectOutputStream.writeObject(message);
         System.out.println("Sent to Socket");
-        output.close();
+//        output.close();
     }
 
     private static void sendArticlesToClient(Socket socket,HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) {
