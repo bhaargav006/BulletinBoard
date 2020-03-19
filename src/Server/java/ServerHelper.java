@@ -21,7 +21,7 @@ public class ServerHelper {
     }
 
 
-    public static void processMessageFromClient(Socket socket, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException, ClassNotFoundException {
+    public static void processMessageFromClient(Socket socket, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException {
        System.out.println("Client's request is " + message[0]);
         switch (message[0]){
             case "Read": sendArticlesToClient(socket, articleList,dependencyList);break;
@@ -29,7 +29,6 @@ public class ServerHelper {
             case "Publish":
             case "Reply":
                 publishToCoordinator(socket, message, dependencyList);break;
-            case "exit": socket.close(); break;
             default:
                 System.out.println("Invalid");
         }
@@ -86,7 +85,6 @@ public class ServerHelper {
             dummyList.add(0);
             dependencyList.put(1, dummyList);
             output = new ObjectOutputStream(socket.getOutputStream());
-            System.out.println("I'm here");
             output.writeObject(articleList);
             output.writeObject(dependencyList);
             System.out.println("Sent to Client: Article: " +  articleList.get(0) + " Dependency: " + dependencyList.get(1));
@@ -114,7 +112,7 @@ public class ServerHelper {
         ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
         String readMessage = (String) objectInputStream.readObject();
         HashMap<Integer, Integer> dependencyList = (HashMap) objectInputStream.readObject();
-        //How am I suppose to update the dependency list and articleList? 
+        //How am I suppose to update the dependency list and articleList?
 //        updateArticleAndDependencyList()
     }
 }
