@@ -1,6 +1,5 @@
 import javafx.util.Pair;
 
-import javax.swing.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -35,9 +34,9 @@ public class CoordinatorHelper {
             String message = (String) objectInputStream.readObject();
             // Gets the latest ID depending on whether it is post or reply.
             messageToSend = message.split("-");
-            if(messageToSend.length > 1){
-                latestID = getLatestID(socket, messageToSend[1], ID);
-                result = latestID + messageToSend[1];
+            if(messageToSend.length >= 1){
+                latestID = getLatestID(socket, messageToSend[0], ID);
+                result = latestID + messageToSend[0];
             }
             else{
                 latestID = getLatestID(socket, messageToSend[0], ID);
