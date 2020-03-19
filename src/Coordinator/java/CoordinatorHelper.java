@@ -1,5 +1,6 @@
 import javafx.util.Pair;
 
+import javax.swing.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -22,32 +23,37 @@ public class CoordinatorHelper {
         return listOfServers;
     }
 
-    public static Pair<String, HashMap<Integer, Integer>> receiveMessageFromServer(Socket socket, HashMap<String, String> serverMessageQueue, int ID) throws ClassNotFoundException {
+    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> receiveMessageFromServer(Socket socket, HashMap<String, String> serverMessageQueue, int ID) throws ClassNotFoundException {
         String result = null;
         int latestID = 0;
-
-        HashMap<Integer, Integer> dependencyList = null;
-
+        String[] messageToSend = null;
+        HashMap<Integer, ArrayList<Integer>> dependencyList = null;
+        ArrayList<Integer> childList = null;
         try {
-            DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
             ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
             dependencyList = (HashMap) objectInputStream.readObject();
             String message = (String) objectInputStream.readObject();
             // Gets the latest ID depending on whether it is post or reply.
-            String[] messageToSend = message.split("-");
-            if(messageToSend.length > 1)
+            messageToSend = message.split("-");
+            if(messageToSend.length > 1){
                 latestID = getLatestID(socket, messageToSend[1], ID);
-            else
+                result = latestID + messageToSend[1];
+            }
+            else{
                 latestID = getLatestID(socket, messageToSend[0], ID);
-            System.out.println("The latest ID is: " + latestID);
+                result = latestID + messageToSend[0] + messageToSend[1];
+            }
 
-            result = latestID + messageToSend[1];
-            in.close();
+            System.out.println("The latest ID is: " + latestID);
+            objectInputStream.close();
 
         } catch (IOException e) {
             System.out.println("Error while receiving message from Client");
         }
-        Pair<String, HashMap<Integer, Integer>> pair = new Pair<String, HashMap<Integer, Integer>>(result, dependencyList);
+        childList = dependencyList.get(messageToSend[0]);
+        childList.add(latestID);
+        dependencyList.put(Integer.parseInt(messageToSend[0]), childList);
+        Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<String, HashMap<Integer, ArrayList<Integer>>>(result, dependencyList);
         return pair;
     }
 
@@ -55,7 +61,7 @@ public class CoordinatorHelper {
         return ID += ID;
     }
 
-    public static void broadcastMessageToServers(Socket socket, String message, HashMap<Integer, Integer> dependencyList) throws IOException {
+    public static void broadcastMessageToServers(Socket socket, String message, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException {
         ArrayList<String> listOfServers = getServerIPAndPort();
         Enumeration enumeration = Collections.enumeration(listOfServers);
         while(enumeration.hasMoreElements()){

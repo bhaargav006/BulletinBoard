@@ -24,7 +24,7 @@ public class Server {
             socket.close();
             System.out.println("Socket Closed");
 
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             System.out.println("Error in the server sockets");
         }
     }

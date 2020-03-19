@@ -23,7 +23,7 @@ public class ServerHelper {
         return ret;
     }
 
-    public static void processMessageFromClient(Socket socket, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, List<Integer>> dependencyList) throws IOException {
+    public static void processMessageFromClient(Socket socket, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException, ClassNotFoundException {
         switch (message[0]){
             case "Read": sendArticlesToClient(socket,articleList,dependencyList);break;
             /*TODO:
@@ -51,16 +51,17 @@ public class ServerHelper {
 
     }
 
-    private static void publishToCoordinator(Socket socket1, String[] message, HashMap<Integer, List<Integer>> dependencyList) throws IOException {
-        Socket socket = new Socket(InetAddress.getLocalHost(), 9999);
+    private static void publishToCoordinator(Socket socket, String[] message, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException, ClassNotFoundException {
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
         objectOutputStream.writeObject(dependencyList);
         objectOutputStream.writeObject(message);
         System.out.println("Sent to Socket");
+
+        receiveMessagefromCoordinator(socket);
 //        output.close();
     }
 
-    private static void sendArticlesToClient(Socket socket,HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) {
+    private static void sendArticlesToClient(Socket socket, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) {
         //Send the whole object to the client
         ObjectOutputStream output = null;
         try {
@@ -92,5 +93,12 @@ public class ServerHelper {
             System.out.println("Can't send message back to the client");
         }
 
+    }
+
+    public static void receiveMessagefromCoordinator(Socket socket) throws IOException, ClassNotFoundException {
+        ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+        String readMessage = (String) objectInputStream.readObject();
+        HashMap<Integer, Integer> dependencyList = (HashMap) objectInputStream.readObject();
+//        updateArticleAndDependencyList()
     }
 }
