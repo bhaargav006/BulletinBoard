@@ -13,7 +13,7 @@ public class Client {
         InetAddress host = InetAddress.getLocalHost();
         try {
             Socket socket = new Socket(host, 8000);
-            String message = "Reply 2 some message";
+            String message = "Post blah blah";
             ClientHelper.processMessage(socket,message);
             socket.close();
 

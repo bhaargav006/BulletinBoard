@@ -1,10 +1,10 @@
-import java.io.*;
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class ServerHelper {
     public static String[] receiveMessageFromClient(Socket socket){
@@ -21,12 +21,12 @@ public class ServerHelper {
     }
 
 
-    public static void processMessageFromClient(Socket socket, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException {
+    public static void processMessageFromClient(Socket socket, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException, ClassNotFoundException {
        System.out.println("Client's request is " + message[0]);
         switch (message[0]){
             case "Read": sendArticlesToClient(socket, articleList,dependencyList);break;
             case "Choose": sendChosenArticle(socket, message[1], articleList);break;
-            case "Publish":
+            case "Post":
             case "Reply":
                 publishToCoordinator(socket, message, dependencyList);break;
             default:
@@ -46,9 +46,7 @@ public class ServerHelper {
     }
 
     private static void publishToCoordinator(Socket socket, String[] message, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException, ClassNotFoundException {
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-        objectOutputStream.writeObject(dependencyList);
-        objectOutputStream.writeObject(message);
+
         //Message format for post and reply needs to be set when client is sending it to server?
         //Currently I am parsing it as:
         //POST: <Insert-message>
@@ -67,12 +65,18 @@ public class ServerHelper {
             sb.append(" ");
         }
         System.out.println(sb.toString());
-        DataOutputStream output = new DataOutputStream(socket.getOutputStream());
-        output.writeUTF(sb.toString());
+        InetAddress host = InetAddress.getLocalHost();
+        try {
+            Socket coordinatorSocket = new Socket(host, 8001);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(coordinatorSocket.getOutputStream());
+            objectOutputStream.writeObject(dependencyList);
+            objectOutputStream.writeObject(sb.toString());
+            System.out.println("Sent to Coordinator");
+            receiveMessagefromCoordinator(coordinatorSocket);
 
-        System.out.println("Sent to Socket");
-
-        receiveMessagefromCoordinator(socket);
+        } catch (IOException e) {
+            System.out.println("Error occurred while communicating with the Coordinator");
+        }
 //        output.close();
     }
 
