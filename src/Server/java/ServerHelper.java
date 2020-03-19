@@ -10,28 +10,21 @@ public class ServerHelper {
     public static String[] receiveMessageFromClient(Socket socket){
         String[] ret = null;
         try {
-            DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-            String message = in.readUTF();
-            ret = message.split(" ");
-            System.out.println(ret[0]);
-            //in.close();
+            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+            ret = (String[])in.readObject();
 
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             System.out.println("Error while receiving message from Client");
         }
 
         return ret;
     }
 
+
     public static void processMessageFromClient(Socket socket, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException, ClassNotFoundException {
+       System.out.println("Client's request is " + message[0]);
         switch (message[0]){
-            case "Read": sendArticlesToClient(socket,articleList,dependencyList);break;
-            /*TODO:
-               1. Limit the number of TCP calls. It's VERY slow.
-               2. Change this to process more than just one word for the operation.
-                    Publish and Reply i -> invokes the same function, but reply with additional dependency.
-               3.
-             */
+            case "Read": sendArticlesToClient(socket, articleList,dependencyList);break;
             case "Choose": sendChosenArticle(socket, message[1], articleList);break;
             case "Publish":
             case "Reply":
@@ -43,10 +36,12 @@ public class ServerHelper {
     }
 
     private static void sendChosenArticle(Socket socket, String ID, HashMap<Integer, String> articleList) {
-        Integer articleID = Integer.getInteger(ID);
+        articleList.put(0,"Dummy article");
+        Integer articleID = Integer.parseInt(ID);
+        System.out.println("Article ID is " + articleID);
         String article = articleList.get(articleID);
-        //Need to check this
-
+        if(article == null || article == "")
+            article = "Invalid article ID. There is no such article";
         sendMessageToClient(socket,article);
 
     }
@@ -55,6 +50,27 @@ public class ServerHelper {
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
         objectOutputStream.writeObject(dependencyList);
         objectOutputStream.writeObject(message);
+        //Message format for post and reply needs to be set when client is sending it to server?
+        //Currently I am parsing it as:
+        //POST: <Insert-message>
+        //REPLY: <ID-number> - <Insert-message>
+        //We can change this if needed.
+        StringBuilder sb = new StringBuilder("");
+        int i=1;
+        if(message[0].equalsIgnoreCase("Reply")){
+            sb.append(message[1]);
+            sb.append("-");
+            i++;
+        }
+        while(i<message.length){
+            sb.append(message[i]);
+            i++;
+            sb.append(" ");
+        }
+        System.out.println(sb.toString());
+        DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+        output.writeUTF(sb.toString());
+
         System.out.println("Sent to Socket");
 
         receiveMessagefromCoordinator(socket);
@@ -81,13 +97,12 @@ public class ServerHelper {
     }
 
     public static void sendMessageToClient(Socket socket, String message) {
-
-        DataOutputStream output = null;
+        //Send the string message to the client
+        ObjectOutputStream output = null;
         try {
-            output = new DataOutputStream(socket.getOutputStream());
-            System.out.println("I'm here");
-            output.writeUTF("Sending something back to the client");
-            System.out.println("Sent to Client");
+            output = new ObjectOutputStream(socket.getOutputStream());
+            output.writeObject(message);
+            System.out.println("Sent the article to Client");
             output.close();
         } catch (IOException e) {
             System.out.println("Can't send message back to the client");
@@ -99,6 +114,7 @@ public class ServerHelper {
         ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
         String readMessage = (String) objectInputStream.readObject();
         HashMap<Integer, Integer> dependencyList = (HashMap) objectInputStream.readObject();
+        //How am I suppose to update the dependency list and articleList? 
 //        updateArticleAndDependencyList()
     }
 }

@@ -13,9 +13,8 @@ public class Client {
         InetAddress host = InetAddress.getLocalHost();
         try {
             Socket socket = new Socket(host, 8000);
-            String message = "Read";
-            ClientHelper.sendMessageToServer(socket,message);
-            ClientHelper.receiveMessageFromServer(socket);
+            String message = "Reply 2 some message";
+            ClientHelper.processMessage(socket,message);
             socket.close();
 
         } catch (IOException e) {
