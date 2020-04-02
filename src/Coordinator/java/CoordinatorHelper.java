@@ -21,7 +21,7 @@ public class CoordinatorHelper {
         return listOfServers;
     }
 
-    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> receiveMessageFromServer(Socket socket, HashMap<String, String> serverMessageQueue, int ID) throws ClassNotFoundException {
+    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> receiveMessageFromServer(Socket socket, HashMap<String, String> serverMessageQueue, int ID) {
         String result = null;
         int latestID;
         String[] messageToSend = null;
@@ -46,10 +46,12 @@ public class CoordinatorHelper {
             }
 
             System.out.println("The latest ID is: " + latestID);
-//            objectInputStream.close();
+
 
         } catch (IOException e) {
-            System.out.println("Error while receiving message from Client");
+            System.out.println("Error while receiving message from Server");
+        } catch (ClassNotFoundException e) {
+            System.out.println("Couldn't read object from server");
         }
 
         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<String, HashMap<Integer, ArrayList<Integer>>>(result, dependencyList);

@@ -8,32 +8,48 @@ import java.util.HashMap;
 
 public class Server {
 
+    Socket coordinatorSocket;
+    static volatile HashMap<Integer, String> articleList;
+    static volatile HashMap<Integer, ArrayList<Integer>> dependencyList;
+    Consistency type;
+    ServerSocket server;
 
-    public Server(int port) throws UnknownHostException {
 
-        HashMap<Integer, String> articleList = new HashMap<>();
-        HashMap<Integer, ArrayList<Integer>> dependencyList = new HashMap<>();
+    public Server(int port, String arg) {
 
-        /* Getting data from the client */
-        InetAddress host = InetAddress.getLocalHost();
+        articleList = new HashMap<>();
+        dependencyList = new HashMap<>();
+        type = Enum.valueOf(Consistency.class,arg);
+        server = null;
+
         try {
-            ServerSocket server = new ServerSocket(port);
-            Socket socket = server.accept();
-            String[] message = ServerHelper.receiveMessageFromClient(socket);
-            ServerHelper.processMessageFromClient(socket, message,articleList,dependencyList);
-            socket.close();
-            System.out.println("Socket Closed");
+            InetAddress host = InetAddress.getLocalHost();
+            coordinatorSocket = new Socket(host, 8001);
+            server = new ServerSocket(port);
 
-        } catch (IOException | ClassNotFoundException e) {
-            System.out.println("Error in the server sockets");
+            while(true) {
+
+                Socket client = null;
+                try {
+                    client = server.accept();
+
+                    Thread clientResponder = new ClientResponder(client, coordinatorSocket);
+                    clientResponder.start();
+
+                } catch (IOException e) {
+                    client.close();
+                    System.out.println("Error in the server sockets while accepting clients");
+                }
+            }
+
+        } catch (UnknownHostException e) {
+            System.out.println("Couldn't get the host of the Server");
+        } catch (IOException e) {
+            System.out.println("Couldn't create connection to the Coordinator ");
         }
     }
     public static void main(String[] args)  {
 
-        try {
-            Server server = new Server(8000);
-        } catch (UnknownHostException e) {
-            System.out.println("Host cannot be resolved");
-        }
+        Server server = new Server(8000, "QUORUM");
     }
 }
