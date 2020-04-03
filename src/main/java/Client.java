@@ -44,9 +44,7 @@ public class Client {
                 }
                 System.out.println(message);
                 ClientHelper.processMessage(socket,message);
-//                socket.close();
             }
-
 
         } catch (IOException e) {
             System.out.println("Error occurred while communicating with the server");

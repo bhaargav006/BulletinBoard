@@ -1,13 +1,12 @@
-import javafx.util.Pair;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.HashMap;
 
 public class Coordinator {
+
 
     HashMap<String, String> serverMessageQueue = new HashMap<>();
     int ID = 0;
@@ -62,12 +61,43 @@ public class Coordinator {
             default:
                 System.out.println("Invalid Input");
 
+
+//    static volatile HashMap<String, String> serverMessageQueue ;
+//    static volatile int ID ;
+//    Consistency type;
+//
+//    public Coordinator(int port, String arg) {
+//        ID = 0;
+//        type = Enum.valueOf(Consistency.class,arg);
+//        serverMessageQueue = new HashMap<>();
+//
+//        try {
+//            InetAddress host = InetAddress.getLocalHost();
+//            ServerSocket coordinator = null;
+//
+//            try {
+//                coordinator = new ServerSocket(port);
+//                Socket server = coordinator.accept();
+//
+//                Thread serverResponder = new ServerResponder(server);
+//                serverResponder.start();
+//
+//
+//            } catch (IOException e) {
+//                System.out.println("Error in the server sockets while accepting server");
+//            }
+//
+//        } catch (UnknownHostException e) {
+//            System.out.println("Couldn't get the host of the Coordinator");
+//        } catch (IOException e) {
+//            System.out.println("Couldn't create connection to the Server");
+
         }
 
     }
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
-        Coordinator coordinator = new Coordinator(8001);
+        Coordinator coordinator = new Coordinator(8001, "QUORUM");
     }
 }
 

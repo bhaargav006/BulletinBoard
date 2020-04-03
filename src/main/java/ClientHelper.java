@@ -3,9 +3,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Stack;
 
 public class ClientHelper {
     public static void sendMessageToServer(Socket socket, String[] message, int flag) throws IOException {
@@ -55,6 +53,7 @@ public class ClientHelper {
         createString(articleList, dependencyList,visitedArray, i);
         //Do a DFS
     }
+
 
     private static void createString(HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList, boolean[] visitedArray, int index) {
         if(index > articleList.size()){
