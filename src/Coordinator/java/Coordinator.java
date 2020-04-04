@@ -1,9 +1,13 @@
+import javafx.util.Pair;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Scanner;
 
 public class Coordinator {
 
@@ -12,7 +16,7 @@ public class Coordinator {
     int ID = 0;
     Scanner in = new Scanner(System.in);
     String consistency = "";
-    public Coordinator(int port) throws IOException, ClassNotFoundException {
+    public Coordinator(int port, String quorum) throws IOException, ClassNotFoundException {
         System.out.println("Hello Coordinator, Choose a type of consistency:");
         System.out.println("1. [Seq] Sequential Consistency \n2. [Quo] Quorum Consistency \n3. [RYW] Read your write Consistency");
         consistency = in.nextLine();
