@@ -1,9 +1,11 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class ServerHelper {
     public static String[] receiveMessageFromClient(Socket socket){
@@ -19,6 +21,69 @@ public class ServerHelper {
         return ret;
     }
 
+    /***
+     * servers can get out of synch, to bring each replica up to date with each other,
+     * we periodically call synch
+     */
+    public static void synch() throws IOException, ClassNotFoundException {
+        ArrayList<String> serverIPAndPort = CoordinatorHelper.getServerIPAndPort();
+        InetAddress host = InetAddress.getLocalHost();
+        //get max id from coordinator
+        InetAddress chost = InetAddress.getByName("cooridnator");
+        int cport= 0; //set port of coordinator
+        Socket coordinatorPort = new Socket(chost, cport);
+        ObjectOutputStream coos = new ObjectOutputStream(coordinatorPort.getOutputStream());
+        ObjectInputStream cois = new ObjectInputStream(coordinatorPort.getInputStream());
+        coos.writeUTF("getLatestId");
+        int latestId = Integer.parseInt(cois.readUTF());
+
+        //get local maps from servers and create a global map with all the entries
+        HashMap<Integer,String> globalMap = new HashMap<>();
+        HashMap<String, List<Integer>> mapForEachServer = new HashMap<>();
+        HashMap<String, ObjectOutputStream>outputStreamHashMap = new HashMap<>();
+        List<Socket>sockets = new ArrayList<>();
+        for(String serv : serverIPAndPort) {
+            Socket socket = new Socket(host,Integer.parseInt(serv));
+            ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+            sockets.add(socket);
+            outputStreamHashMap.put(serv,oos);
+            oos.writeUTF("getLocalMap");
+            HashMap<Integer, String> localMap = (HashMap<Integer, String>) ois.readObject();
+            for (int i = 1; i <= latestId; i++) {
+                if(localMap.containsKey(i)) {
+                    globalMap.put(i,localMap.get(i));
+                }
+                else {
+                    List<Integer> ids = mapForEachServer.get(serv);
+                    if(ids == null) {
+                        List<Integer> id = new ArrayList<>();
+                        id.add(i);
+                        mapForEachServer.put(serv,id);
+                    }
+                    else {
+                        ids.add(i);
+                    }
+                }
+            }
+
+        }
+        for(String serv: serverIPAndPort) {
+           List<Integer> ids = mapForEachServer.get(serv);
+           for(int id: ids) {
+               String content = globalMap.get(id);
+               ObjectOutputStream oos = outputStreamHashMap.get(serv);
+               oos.writeUTF("Sync" + String.valueOf(id) + ":"+ content);
+           }
+        }
+        for(Socket s: sockets) {
+            s.close();
+        }
+
+    }
+
+
+
 
     public static void processMessageFromClient(Socket client, Socket coordinator, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList)  {
        System.out.println("Client's request is " + message[0]);
@@ -28,6 +93,10 @@ public class ServerHelper {
             case "Post":
             case "Reply":
                 publishToCoordinator(coordinator, message, dependencyList);break;
+            case "getLocalMap":
+               // sendArticlesToClient(socket, articleList,dependencyList);break;
+            case "Sync":
+                //update the local map
             default:
                 System.out.println("Invalid");
         }
