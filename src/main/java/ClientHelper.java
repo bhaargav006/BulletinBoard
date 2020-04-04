@@ -47,9 +47,36 @@ public class ClientHelper {
 
     }
 
-    private static void readArticles(HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) {
-        System.out.println("Print read stuff");
+    public static void readArticles(HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) {
+        int i = 1;
+        boolean[] visitedArray = new boolean[articleList.size()];
+        createString(articleList, dependencyList,visitedArray, i);
         //Do a DFS
+    }
+
+
+    private static void createString(HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList, boolean[] visitedArray, int index) {
+        if(index > articleList.size()){
+            return;
+        }
+        if(visitedArray[index - 1] == false){
+            System.out.println(index +". " +articleList.get(index));
+        }
+        ArrayList<Integer> childList = dependencyList.get(index);
+        visitedArray[index - 1] = true;
+        if(childList == null || childList.size() == 0){
+            createString(articleList, dependencyList,visitedArray, index + 1);
+        }
+        else{
+            for(int i = 0; i < childList.size(); i++){
+                if(visitedArray[childList.get(i) - 1] == false){
+                    System.out.print("\t " + childList.get(i) +". " +articleList.get(childList.get(i)));
+                    System.out.println();
+                    visitedArray[childList.get(i) - 1] = true;
+                }
+            }
+            createString(articleList, dependencyList,visitedArray, index + 1);
+        }
     }
 
     public static void processMessage(Socket socket, String message) throws IOException {

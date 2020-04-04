@@ -1,7 +1,6 @@
 import javafx.util.Pair;
 
 import java.io.*;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.util.*;
 
@@ -18,15 +17,11 @@ public class CoordinatorHelper {
         listOfServers.add(prop.getProperty("server2").split(":")[1]);
         listOfServers.add(prop.getProperty("server3").split(":")[1]);
         listOfServers.add(prop.getProperty("server4").split(":")[1]);
-//        while(enumeration.hasMoreElements()){
-//            String server = prop.getProperty((String) prop.keys().nextElement());
-//            listOfServers.add(server.split(":")[1]);
-//        }
 
         return listOfServers;
     }
 
-    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> receiveMessageFromServer(Socket socket, HashMap<String, String> serverMessageQueue, int ID) throws ClassNotFoundException {
+    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> receiveMessageFromServer(Socket socket, HashMap<String, String> serverMessageQueue, int ID) {
         String result = null;
         int latestID;
         String[] messageToSend = null;
@@ -51,10 +46,12 @@ public class CoordinatorHelper {
             }
 
             System.out.println("The latest ID is: " + latestID);
-//            objectInputStream.close();
+
 
         } catch (IOException e) {
-            System.out.println("Error while receiving message from Client");
+            System.out.println("Error while receiving message from Server");
+        } catch (ClassNotFoundException e) {
+            System.out.println("Couldn't read object from server");
         }
 
         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<String, HashMap<Integer, ArrayList<Integer>>>(result, dependencyList);
@@ -75,6 +72,39 @@ public class CoordinatorHelper {
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             objectOutputStream.writeObject(message);
             objectOutputStream.writeObject(dependencyList);
+            System.out.println("Sent to Socket");
+            objectOutputStream.close();
+            socket.close();
+        }
+    }
+
+    public static HashMap<String,Integer> getReadAndWriteServers() throws IOException {
+        HashMap<String,Integer> readWriteServers = new HashMap<String,Integer>();
+        File file = new File("src/serverList.properties");
+        FileInputStream fileInputStream = new FileInputStream(file);
+        Properties prop = new Properties();
+        prop.load(fileInputStream);
+        Enumeration enumeration = prop.keys();
+        readWriteServers.put("Read", Integer.parseInt(prop.getProperty("numberOfReadServers")));
+        readWriteServers.put("Write", Integer.parseInt(prop.getProperty("numberOfWriteServers")));
+
+        return readWriteServers;
+    }
+
+    public static boolean validReadWriteServerValues(Integer read, Integer write, Integer N) throws IOException {
+        if((read + write > N) && (write > N/2))
+            return true;
+        return false;
+    }
+
+    public static void sendConsistencyTypeToServers(Socket socket, String consistency) throws IOException {
+        ArrayList<String> listOfServers = getServerIPAndPort();
+        Enumeration enumeration = Collections.enumeration(listOfServers);
+        while(enumeration.hasMoreElements()){
+            int port = Integer.parseInt((String)enumeration.nextElement());
+//            Socket serverSocket = new Socket(InetAddress.getLocalHost(), port);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+            objectOutputStream.writeObject(consistency);
             System.out.println("Sent to Socket");
             objectOutputStream.close();
             socket.close();
