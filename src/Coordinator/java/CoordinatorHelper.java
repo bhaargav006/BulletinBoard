@@ -97,17 +97,34 @@ public class CoordinatorHelper {
         return false;
     }
 
-    public static void sendConsistencyTypeToServers(Socket socket, String consistency) throws IOException {
-        ArrayList<String> listOfServers = getServerIPAndPort();
-        Enumeration enumeration = Collections.enumeration(listOfServers);
-        while(enumeration.hasMoreElements()){
-            int port = Integer.parseInt((String)enumeration.nextElement());
-//            Socket serverSocket = new Socket(InetAddress.getLocalHost(), port);
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+    public static void sendConsistencyTypeToServers(Socket socket, String consistency){
+
+        ObjectOutputStream objectOutputStream = null;
+        try {
+            objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             objectOutputStream.writeObject(consistency);
-            System.out.println("Sent to Socket");
             objectOutputStream.close();
-            socket.close();
+            System.out.println("Sent Consistency type to server at port " + socket.getPort());
+        } catch (IOException e) {
+            System.out.println("Couldn't send Consistency type to server at port " + socket.getPort());
+        }
+
+    }
+
+    public static Consistency getConsistencyType(String consistency){
+        switch (consistency) {
+            case "Seq":
+                return Consistency.SEQUENTIAL;
+            case "Quo":
+                return Consistency.QUORUM;
+            case "RYW":
+                return Consistency.READ_YOUR_WRITE;
+            case "Exit":
+                System.out.println("Bye Bye");
+                return Consistency.ERROR;
+            default:
+                System.out.println("Invalid Input");
+                return Consistency.EXIT;
         }
     }
 }
