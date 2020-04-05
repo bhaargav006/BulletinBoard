@@ -11,15 +11,13 @@ public class Server {
     Socket coordinatorSocket;
     static volatile HashMap<Integer, String> articleList;
     static volatile HashMap<Integer, ArrayList<Integer>> dependencyList;
-    Consistency type;
     ServerSocket server;
+    Consistency type;
 
-
-    public Server(int port, String arg) {
+    public Server(int port) {
 
         articleList = new HashMap<>();
         dependencyList = new HashMap<>();
-        type = Enum.valueOf(Consistency.class,arg);
         server = null;
         Thread syncthread = null;
         if(Consistency.QUORUM == type) {
@@ -30,7 +28,8 @@ public class Server {
             InetAddress host = InetAddress.getLocalHost();
             coordinatorSocket = new Socket(host, 8001);
             server = new ServerSocket(port);
-
+            type = ServerHelper.getConsistencyType(coordinatorSocket);
+            System.out.println(type.toString());
             while(true) {
 
                 Socket client = null;
@@ -55,6 +54,6 @@ public class Server {
     }
     public static void main(String[] args)  {
 
-        Server server = new Server(8000, "QUORUM");
+        Server server = new Server(8000);
     }
 }

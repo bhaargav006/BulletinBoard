@@ -1,5 +1,3 @@
-import com.sun.org.apache.xpath.internal.operations.Bool;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -30,7 +28,7 @@ public class Client {
                         message = "Read";
                         break;
                     case "C":
-                        message = "Chooose";
+                        message = "Choose 0";
                         break;
                     case "Rep":
                         message = "Reply dnfdfn";

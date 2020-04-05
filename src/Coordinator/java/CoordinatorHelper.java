@@ -2,7 +2,10 @@ import javafx.util.Pair;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Properties;
 
 public class CoordinatorHelper {
 
@@ -21,32 +24,33 @@ public class CoordinatorHelper {
         return listOfServers;
     }
 
-    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> receiveMessageFromServer(Socket socket, HashMap<String, String> serverMessageQueue, int ID) {
+    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> receiveMessageFromServer(Socket socket, int ID) {
         String result = null;
         int latestID;
-        String[] messageToSend = null;
+        String[] messageReceived = null;
         HashMap<Integer, ArrayList<Integer>> dependencyList = null;
         ArrayList<Integer> childList = null;
         try {
+            System.out.println("Server at: " + socket.getPort());
             ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
             dependencyList = (HashMap) objectInputStream.readObject();
             String message = (String) objectInputStream.readObject();
+
             // Gets the latest ID depending on whether it is post or reply.
-            messageToSend = message.split("-");
-            if(messageToSend.length >= 1){
-                latestID = getLatestID(socket, messageToSend[0], ID);
-                result = latestID + " " + messageToSend[0];
+            messageReceived = message.split("-");
+            if(messageReceived.length >= 1){
+                latestID = getLatestID(socket, messageReceived[0], ID);
+                result = latestID + " " + messageReceived[0];
             }
             else{
-                latestID = getLatestID(socket, messageToSend[0], ID);
-                result = latestID + " " + messageToSend[0] + " " + messageToSend[1];
-                childList = dependencyList.get(messageToSend[0]);
+                latestID = getLatestID(socket, messageReceived[0], ID);
+                result = latestID + " " + messageReceived[0] + " " + messageReceived[1];
+                childList = dependencyList.get(messageReceived[0]);
                 childList.add(latestID);
-                dependencyList.put(Integer.parseInt(messageToSend[0]), childList);
+                dependencyList.put(Integer.parseInt(messageReceived[0]), childList);
             }
 
             System.out.println("The latest ID is: " + latestID);
-
 
         } catch (IOException e) {
             System.out.println("Error while receiving message from Server");
@@ -63,19 +67,18 @@ public class CoordinatorHelper {
         return latestID;
     }
 
-    public static void broadcastMessageToServers(Socket socket, String message, HashMap<Integer, ArrayList<Integer>> dependencyList) throws IOException {
-        ArrayList<String> listOfServers = getServerIPAndPort();
-        Enumeration enumeration = Collections.enumeration(listOfServers);
-        while(enumeration.hasMoreElements()){
-            int port = Integer.parseInt((String)enumeration.nextElement());
-//            Socket serverSocket = new Socket(InetAddress.getLocalHost(), port);
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-            objectOutputStream.writeObject(message);
-            objectOutputStream.writeObject(dependencyList);
-            System.out.println("Sent to Socket");
-            objectOutputStream.close();
-            socket.close();
+    public static void broadcastMessageToServers(String message, HashMap<Integer, ArrayList<Integer>> dependencyList) {
+        try {
+            for(Socket server : Coordinator.serverSockets){
+                ObjectOutputStream objectOutputStream = new ObjectOutputStream(server.getOutputStream());
+                objectOutputStream.writeObject(message);
+                objectOutputStream.writeObject(dependencyList);
+                System.out.println("Sent to Socket");
+            }
+        } catch (IOException e) {
+            System.out.println("Problem broadcasting to servers from coordinator");
         }
+
     }
 
     public static HashMap<String,Integer> getReadAndWriteServers() throws IOException {
@@ -97,17 +100,32 @@ public class CoordinatorHelper {
         return false;
     }
 
-    public static void sendConsistencyTypeToServers(Socket socket, String consistency) throws IOException {
-        ArrayList<String> listOfServers = getServerIPAndPort();
-        Enumeration enumeration = Collections.enumeration(listOfServers);
-        while(enumeration.hasMoreElements()){
-            int port = Integer.parseInt((String)enumeration.nextElement());
-//            Socket serverSocket = new Socket(InetAddress.getLocalHost(), port);
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+    public static void sendConsistencyTypeToServers(Socket socket, String consistency){
+        System.out.println("Sending consistency to Server");
+        ObjectOutputStream objectOutputStream = null;
+        try {
+            objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             objectOutputStream.writeObject(consistency);
-            System.out.println("Sent to Socket");
-            objectOutputStream.close();
-            socket.close();
+        } catch (IOException e) {
+            System.out.println("Couldn't send Consistency type to server at port " + socket.getPort());
+        }
+
+    }
+
+    public static Consistency getConsistencyType(String consistency){
+        switch (consistency) {
+            case "Seq":
+                return Consistency.SEQUENTIAL;
+            case "Quo":
+                return Consistency.QUORUM;
+            case "RYW":
+                return Consistency.READ_YOUR_WRITE;
+            case "Exit":
+                System.out.println("Bye Bye");
+                return Consistency.ERROR;
+            default:
+                System.out.println("Invalid Input");
+                return Consistency.EXIT;
         }
     }
 }

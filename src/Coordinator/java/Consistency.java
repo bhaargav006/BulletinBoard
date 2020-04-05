@@ -1,5 +1,7 @@
 public enum Consistency {
     SEQUENTIAL,
     QUORUM,
-    READ_YOUR_WRITE
+    READ_YOUR_WRITE,
+    ERROR,
+    EXIT
 }
