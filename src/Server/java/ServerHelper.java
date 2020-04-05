@@ -6,6 +6,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ServerHelper {
     public static String[] receiveMessageFromClient(Socket socket){
@@ -27,10 +28,9 @@ public class ServerHelper {
      */
     public static void synch() throws IOException, ClassNotFoundException {
         ArrayList<String> serverIPAndPort = CoordinatorHelper.getServerIPAndPort();
-        InetAddress host = InetAddress.getLocalHost();
+        InetAddress chost = InetAddress.getLocalHost();
         //get max id from coordinator
-        InetAddress chost = InetAddress.getByName("cooridnator");
-        int cport= 0; //set port of coordinator
+        int cport= 8001; //set port of coordinator
         Socket coordinatorPort = new Socket(chost, cport);
         ObjectOutputStream coos = new ObjectOutputStream(coordinatorPort.getOutputStream());
         ObjectInputStream cois = new ObjectInputStream(coordinatorPort.getInputStream());
@@ -38,28 +38,30 @@ public class ServerHelper {
         int latestId = Integer.parseInt(cois.readUTF());
 
         //get local maps from servers and create a global map with all the entries
-        HashMap<Integer,String> globalMap = new HashMap<>();
-        HashMap<String, List<Integer>> mapForEachServer = new HashMap<>();
+        HashMap<Integer,String> globalArticleMap = new HashMap<>();
+        HashMap<String, List<Integer>> missingArticleMapForEachServer = new HashMap<>();
         HashMap<String, ObjectOutputStream>outputStreamHashMap = new HashMap<>();
+        HashMap<Integer, ArrayList<Integer>> globaldependencyMap = new HashMap<>();
         List<Socket>sockets = new ArrayList<>();
         for(String serv : serverIPAndPort) {
-            Socket socket = new Socket(host,Integer.parseInt(serv));
+            Socket socket = new Socket(InetAddress.getLocalHost(),Integer.parseInt(serv));
             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
             sockets.add(socket);
             outputStreamHashMap.put(serv,oos);
-            oos.writeUTF("getLocalMap");
+            String[] msg = {"getArticlesMap"};
+            oos.writeObject(msg);
             HashMap<Integer, String> localMap = (HashMap<Integer, String>) ois.readObject();
             for (int i = 1; i <= latestId; i++) {
                 if(localMap.containsKey(i)) {
-                    globalMap.put(i,localMap.get(i));
+                    globalArticleMap.put(i,localMap.get(i));
                 }
                 else {
-                    List<Integer> ids = mapForEachServer.get(serv);
+                    List<Integer> ids = missingArticleMapForEachServer.get(serv);
                     if(ids == null) {
                         List<Integer> id = new ArrayList<>();
                         id.add(i);
-                        mapForEachServer.put(serv,id);
+                        missingArticleMapForEachServer.put(serv,id);
                     }
                     else {
                         ids.add(i);
@@ -67,14 +69,74 @@ public class ServerHelper {
                 }
             }
 
+            String []msgForDep = {"getDependencyMap"};
+            oos.writeObject(msgForDep);
+            HashMap<Integer, ArrayList<Integer>> dependencyList = (HashMap<Integer, ArrayList<Integer>> )ois.readObject();
+            for(Map.Entry dependency: dependencyList.entrySet()) {
+                int arId= (int) dependency.getKey();
+                if(globaldependencyMap.containsKey(arId)) {
+                    ArrayList<Integer> children = globaldependencyMap.get(arId);
+                    ArrayList<Integer> localChild = (ArrayList<Integer>) dependency.getValue();
+                    int lenOfChildren = children.size();
+                    int lenOfLocalChildren = localChild.size();
+                    ArrayList<Integer> resChild = new ArrayList<>();
+                    int a = 0;
+                    int b = 0;
+                    while(a < lenOfChildren || b < lenOfLocalChildren ) {
+                        if(a >= lenOfChildren) {
+                            resChild.add(b);
+                            b++;
+                            continue;
+                        }
+                        if(b >= lenOfChildren) {
+                            resChild.add(a);
+                            a++;
+                            continue;
+                        }
+                        if(children.get(a).equals(localChild.get(b))) {
+                            resChild.add(a);
+                            a++;
+                            b++;
+                        }
+                        else if(children.get(a) < localChild.get(b)) {
+                            resChild.add(a);
+                            a++;
+                        }
+                        else {
+                            resChild.add(b);
+                            b++;
+                        }
+                    }
+                    globaldependencyMap.put(arId,resChild);
+                }
+                else {
+                    globaldependencyMap.put(arId,(ArrayList<Integer>) dependency.getValue());
+                }
+            }
+        }
+
+        for(String serv: serverIPAndPort) {
+           List<Integer> ids = missingArticleMapForEachServer.get(serv);
+           for(int id: ids) {
+               String content = globalArticleMap.get(id);
+               ObjectOutputStream oos = outputStreamHashMap.get(serv);
+               String msg[] = {"SyncArticles", String.valueOf(id), content};
+               oos.writeObject(msg);
+           }
         }
         for(String serv: serverIPAndPort) {
-           List<Integer> ids = mapForEachServer.get(serv);
-           for(int id: ids) {
-               String content = globalMap.get(id);
-               ObjectOutputStream oos = outputStreamHashMap.get(serv);
-               oos.writeUTF("Sync" + String.valueOf(id) + ":"+ content);
-           }
+            ObjectOutputStream oos = outputStreamHashMap.get(serv);
+            for(Map.Entry e : globaldependencyMap.entrySet()) {
+                int arId = (int)e.getKey();
+                ArrayList<Integer> ar = (ArrayList<Integer>) e.getValue();
+                String arr = "";
+                for(int a : ar) {
+                    arr += String.valueOf(a) + " ";
+                }
+                arr.trim();
+                String msg[] = {"SyncDependency", String.valueOf(arId), arr};
+                oos.writeObject(msg);
+            }
         }
         for(Socket s: sockets) {
             s.close();
@@ -82,8 +144,17 @@ public class ServerHelper {
 
     }
 
+    public static void updateArticleList(int articleId, String content) {
+        Server.articleList.put(articleId, content);
+    }
 
-
+    public static void updateDependencyList(int articleId, String articles) {
+        String[] ids = articles.split(" ");
+        ArrayList<Integer> arr = new ArrayList<>();
+        for (String id : ids)
+            arr.add(Integer.parseInt(id));
+        Server.dependencyList.put(articleId, arr);
+    }
 
     public static void processMessageFromClient(Socket client, Socket coordinator, String[] message, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList)  {
        System.out.println("Client's request is " + message[0]);
@@ -93,10 +164,13 @@ public class ServerHelper {
             case "Post":
             case "Reply":
                 publishToCoordinator(coordinator, message, dependencyList);break;
-            case "getLocalMap":
+            case "SyncArticles":
+                updateArticleList(Integer.parseInt(message[1]), message[2]);
                // sendArticlesToClient(socket, articleList,dependencyList);break;
-            case "Sync":
+            case "SyncDependency":
                 //update the local map
+                updateDependencyList(Integer.parseInt(message[1]), message[2]);
+
             default:
                 System.out.println("Invalid");
         }

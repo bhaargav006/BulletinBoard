@@ -21,7 +21,11 @@ public class Server {
         dependencyList = new HashMap<>();
         type = Enum.valueOf(Consistency.class,arg);
         server = null;
-
+        Thread syncthread = null;
+        if(Consistency.QUORUM == type) {
+            syncthread = new QuorumSyncThread();
+            new Thread(syncthread).start();
+        }
         try {
             InetAddress host = InetAddress.getLocalHost();
             coordinatorSocket = new Socket(host, 8001);
@@ -38,6 +42,7 @@ public class Server {
 
                 } catch (IOException e) {
                     client.close();
+                    ((QuorumSyncThread) syncthread).stopSync();
                     System.out.println("Error in the server sockets while accepting clients");
                 }
             }
