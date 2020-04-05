@@ -21,15 +21,33 @@ public class ServerResponder extends Thread {
         try {
 
             switch (type) {
-                case SEQUENTIAL:
+                case SEQUENTIAL: {
                     CoordinatorHelper.sendConsistencyTypeToServers(server, Consistency.SEQUENTIAL.toString());
-                    Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.ID);
-                    CoordinatorHelper.broadcastMessageToServers(pair.getKey(), pair.getValue());
+                    while (!type.equals(Consistency.ERROR)) {
+                        Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.ID);
+                        CoordinatorHelper.broadcastMessageToServers(pair.getKey(), pair.getValue());
+                    }
                     server.close();
                     System.out.println("Socket Closed");
                     break;
+                }
 
                 case QUORUM:
+                    CoordinatorHelper.sendConsistencyTypeToServers(server, Consistency.QUORUM.toString());
+                    HashMap<String, Integer> readWriteNumbers = CoordinatorHelper.getReadAndWriteServers();
+                    boolean valid = CoordinatorHelper.validReadWriteServerValues(readWriteNumbers.get("Read"), readWriteNumbers.get("Write"), Coordinator.serverSockets.size());
+                    if(!valid){
+                        System.out.println("Invalid number of read and write servers!");
+                        System.out.println("Closing Sockets");
+                        server.close();
+                        break;
+                    }
+
+                    ArrayList<Socket> readServers = CoordinatorHelper.getReadServers(readWriteNumbers.get("Read"));
+                    ArrayList<Socket> writeServers = CoordinatorHelper.getWriteServers(readWriteNumbers.get("Write"));
+
+                    Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.ID);
+
 
                     break;
                 case READ_YOUR_WRITE:
@@ -51,25 +69,3 @@ public class ServerResponder extends Thread {
     }
 }
 
-//                InetAddress quorumHost = InetAddress.getLocalHost();
-//                ServerSocket quorumServer = new ServerSocket(port);
-//                Socket quorumSocket = quorumServer.accept();
-//                CoordinatorHelper.sendConsistencyTypeToServers(quorumSocket, consistency);
-//                HashMap<String, Integer> readWriteServers = CoordinatorHelper.getReadAndWriteServers();
-//                ArrayList<String> listOfServers = CoordinatorHelper.getServerIPAndPort();
-//                ArrayList<String> readServers = new ArrayList<>();
-//                ArrayList<String> writeServers = new ArrayList<>();
-//                Boolean valid = CoordinatorHelper.validReadWriteServerValues(readWriteServers.get("Read"), readWriteServers.get("Write"), listOfServers.size());
-//                if(valid){
-//                    for(int i = 0; i < readWriteServers.get("Read"); i++){
-//                        readServers.add(listOfServers.get(i));
-//                    }
-//                    for(int i = listOfServers.size() - 1; i >= (listOfServers.size() - readWriteServers.get("Write")); i--){
-//                        writeServers.add(listOfServers.get(i));
-//                    }
-//                }
-//
-//                else{
-//                    System.out.println("Invalid number of read and write servers!");
-////                    quorumSocket.close();
-//                }

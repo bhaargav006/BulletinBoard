@@ -17,7 +17,7 @@ public class ClientResponder extends Thread {
         try {
             System.out.println("Waiting for the client to join");
             String[] message = ServerHelper.receiveMessageFromClient(client);
-            ServerHelper.processMessageFromClient(client, coordinator, message,Server.articleList,Server.dependencyList, type);
+            ServerHelper.processMessageFromClient(client, coordinator, type, message,Server.articleList,Server.dependencyList);
             client.close();
             System.out.println("Socket Closed");
         } catch (IOException e) {
@@ -25,7 +25,7 @@ public class ClientResponder extends Thread {
                 case SEQUENTIAL:
                     String[] message = ServerHelper.receiveMessageFromClient(client);
                     try {
-                        ServerHelper.processMessageFromClient(client, coordinator, message,Server.articleList,Server.dependencyList, type);
+                        ServerHelper.processMessageFromClient(client, coordinator, type, message,Server.articleList,Server.dependencyList);
                     } catch (IOException | ClassNotFoundException e1) {
                         e1.printStackTrace();
                     }
@@ -33,7 +33,7 @@ public class ClientResponder extends Thread {
                 case READ_YOUR_WRITE:
                     String[] clientMessage = ServerHelper.receiveMessageFromClient(client);
                     try {
-                        ServerHelper.processMessageFromClient(client, coordinator, clientMessage,Server.articleList,Server.dependencyList, type);
+                        ServerHelper.processMessageFromClient(client, coordinator, type, clientMessage,Server.articleList,Server.dependencyList);
                     } catch (IOException | ClassNotFoundException e1) {
                         e1.printStackTrace();
                     }
