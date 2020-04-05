@@ -1,6 +1,7 @@
 import javafx.util.Pair;
 
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,13 +33,18 @@ public class ServerResponder extends Thread {
 
                     break;
                 case READ_YOUR_WRITE:
+                    CoordinatorHelper.sendConsistencyTypeToServers(server, Consistency.SEQUENTIAL.toString());
+                    Pair<String, HashMap<Integer, ArrayList<Integer>>> rywPair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.ID);
+                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> globalPair = CoordinatorHelper.getArticlesFromCoordinator(server);
+                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(server.getOutputStream());
+                    objectOutputStream.writeObject(globalPair);
                     break;
                 case ERROR:
                     break;
                 case EXIT:
                     break;
             }
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             System.out.println("Couldn't close server sockets");;
         }
 

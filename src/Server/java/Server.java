@@ -14,10 +14,11 @@ public class Server {
     ServerSocket server;
     Consistency type;
 
-    public Server(int port) {
+    public Server(int port, String arg) {
 
-        articleList = new HashMap<>();
-        dependencyList = new HashMap<>();
+        articleList = new HashMap<Integer, String>();
+        dependencyList = new HashMap<Integer, ArrayList<Integer>>();
+        type = Enum.valueOf(Consistency.class,arg);
         server = null;
         Thread syncthread = null;
         if(Consistency.QUORUM == type) {
@@ -36,7 +37,7 @@ public class Server {
                 try {
                     client = server.accept();
 
-                    Thread clientResponder = new ClientResponder(client, coordinatorSocket);
+                    Thread clientResponder = new ClientResponder(client, coordinatorSocket, type);
                     clientResponder.start();
 
                 } catch (IOException e) {
@@ -54,6 +55,6 @@ public class Server {
     }
     public static void main(String[] args)  {
 
-        Server server = new Server(8000);
+        Server server = new Server(8000, "SEQUENTIAL");
     }
 }

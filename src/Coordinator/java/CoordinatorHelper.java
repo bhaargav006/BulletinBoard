@@ -2,10 +2,7 @@ import javafx.util.Pair;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Properties;
+import java.util.*;
 
 public class CoordinatorHelper {
 
@@ -127,5 +124,45 @@ public class CoordinatorHelper {
                 System.out.println("Invalid Input");
                 return Consistency.EXIT;
         }
+    }
+
+    public static Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> getArticlesFromCoordinator(Socket coordinator) throws IOException, ClassNotFoundException {
+        ArrayList<Socket> listOfServerSockets = Coordinator.serverSockets;
+        HashMap<Integer, ArrayList<Integer>> dependencyList = new HashMap<>();
+        HashMap<Integer, String> articleList = new HashMap<>();
+        for(Socket socket: listOfServerSockets){
+            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+            HashMap<Integer, String> serverArticleList = (HashMap) objectInputStream.readObject();
+            HashMap<Integer, ArrayList<Integer>> serverDepenedencyList = (HashMap) objectInputStream.readObject();
+
+            HashSet<Integer> keys = new HashSet<>(serverArticleList.keySet());
+            HashSet<Integer> dependencyKeys = new HashSet<>(serverDepenedencyList.keySet());
+
+            while(keys.iterator().hasNext()){
+                if(articleList.size() == Coordinator.ID){
+                    break;
+                }
+                if(!articleList.containsKey(keys.iterator().next())){
+                    articleList.put(keys.iterator().next(), serverArticleList.get(keys.iterator().next()));
+                }
+            }
+
+            while(dependencyKeys.iterator().hasNext()){
+                if(!dependencyList.containsKey(dependencyKeys.iterator().next())){
+                    dependencyList.put(dependencyKeys.iterator().next(), serverDepenedencyList.get(dependencyKeys.iterator().next()));
+                }
+                ArrayList<Integer> serverChildList = serverDepenedencyList.get(dependencyKeys.iterator().next());
+                ArrayList<Integer> childList = dependencyList.get(dependencyKeys.iterator().next());
+                for(int value: serverChildList){
+                    if(!childList.contains(value)){
+                        childList.add(value);
+                    }
+                }
+                dependencyList.put(dependencyKeys.iterator().next(), childList);
+
+            }
+        }
+        Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>>(articleList, dependencyList);
+        return pair;
     }
 }
