@@ -36,16 +36,22 @@ public class Coordinator {
 
         System.out.println("Starting Coordinator and implementing " + type.toString() + " Consistency");
         ServerSocket coordinator;
-
         try {
             coordinator = new ServerSocket(port);
-            Socket server = coordinator.accept();
-            Thread serverResponder = new ServerResponder(server,type);
-            serverResponder.start();
+            while(true){
+                Socket server = null;
+                try {
+                    server = coordinator.accept();
+                    Thread serverResponder = new ServerResponder(server,type);
+                    serverResponder.start();
 
 
+                } catch (IOException e) {
+                    System.out.println("Error in the Coordinator sockets while accepting server");
+                }
+            }
         } catch (IOException e) {
-            System.out.println("Error in the Coordinator sockets while accepting server");
+            System.out.println("Couldn't create connection with server");
         }
 
     }
