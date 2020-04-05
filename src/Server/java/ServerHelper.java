@@ -197,4 +197,19 @@ public class ServerHelper {
         //How am I suppose to update the dependency list and articleList?
 //        updateArticleAndDependencyList()
     }
+
+    public static Consistency getConsistencyType(Socket coordinator) {
+        ObjectInputStream objectInputStream;
+        System.out.println("Waiting to receive message from coordinator");
+        try {
+            objectInputStream = new ObjectInputStream(coordinator.getInputStream());
+            String readMessage = (String) objectInputStream.readObject();
+            return Enum.valueOf(Consistency.class,readMessage);
+        } catch (IOException e) {
+            System.out.println("Can't read from coordinator");
+        } catch (ClassNotFoundException e) {
+            System.out.println("Couldn't convert the message received from coordinator");
+        }
+        return Consistency.ERROR;
+    }
 }

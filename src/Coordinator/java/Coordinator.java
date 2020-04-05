@@ -14,9 +14,10 @@ public class Coordinator {
     Consistency type;
 
     public Coordinator(int port) {
-        serverMessageQueue = new HashMap<>();
+        serverMessageQueue = new HashMap();
         ID = 0;
         type = Consistency.ERROR;
+        serverSockets = new ArrayList();
 
         while (type.equals(Consistency.ERROR)) {
             System.out.println("Hello Coordinator, Choose a type of consistency:");
@@ -29,12 +30,12 @@ public class Coordinator {
                 System.exit(0);
         }
 
+        System.out.println("Starting Coordinator and implementing " + type.toString() + " Consistency");
         ServerSocket coordinator;
 
         try {
             coordinator = new ServerSocket(port);
             Socket server = coordinator.accept();
-
             Thread serverResponder = new ServerResponder(server,type);
             serverResponder.start();
 
