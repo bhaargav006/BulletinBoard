@@ -12,17 +12,18 @@ public class ServerResponder extends Thread {
     public ServerResponder(Socket server, Consistency type){
         this.server = server;
         this.type = type;
-        Coordinator.serverSockets.add(this.server);
+        Coordinator.serverSockets.add(server);
     }
 
     @Override
     public void run(){
         try {
+
             switch (type) {
                 case SEQUENTIAL:
                     CoordinatorHelper.sendConsistencyTypeToServers(server, Consistency.SEQUENTIAL.toString());
-                    Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.serverMessageQueue, Coordinator.ID);
-                    CoordinatorHelper.broadcastMessageToServers(server, pair.getKey(), pair.getValue());
+                    Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.ID);
+                    CoordinatorHelper.broadcastMessageToServers(pair.getKey(), pair.getValue());
                     server.close();
                     System.out.println("Socket Closed");
                     break;

@@ -13,6 +13,7 @@ public class ClientResponder extends Thread {
     @Override
     public void run(){
         try {
+            System.out.println("Waiting for the client to join");
             String[] message = ServerHelper.receiveMessageFromClient(client);
             ServerHelper.processMessageFromClient(client, coordinator, message,Server.articleList,Server.dependencyList);
             client.close();
