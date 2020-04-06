@@ -1,19 +1,24 @@
 import javafx.util.Pair;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ServerResponder extends Thread {
-    Socket server;
+    SocketConnection server;
     Consistency type;
+    ObjectOutputStream oos = null;
+    ObjectInputStream ois = null;
 
-    public ServerResponder(Socket server, Consistency type){
+    public ServerResponder(SocketConnection server, Consistency type){
         this.server = server;
         this.type = type;
         Coordinator.serverSockets.add(server);
+        this.oos = server.getOos();
+        this.ois = server.getOis();
     }
 
     @Override
@@ -22,10 +27,11 @@ public class ServerResponder extends Thread {
 
             switch (type) {
                 case SEQUENTIAL: {
-                    CoordinatorHelper.sendConsistencyTypeToServers(server, Consistency.SEQUENTIAL.toString());
+                    CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.SEQUENTIAL.toString(), oos);
                     while (!type.equals(Consistency.ERROR)) {
+
                         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
-                        Pair<String, HashMap<Integer, ArrayList<Integer>>> newPair = CoordinatorHelper.processMessageReceivedFromServer(server, type, pair.getKey(), pair.getValue(), Coordinator.ID);
+                        Pair<String, HashMap<Integer, ArrayList<Integer>>> newPair = CoordinatorHelper.processMessageReceivedFromServer(server.getSocket(), type, pair.getKey(), pair.getValue(), Coordinator.ID);
                         CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue());
                     }
                     server.close();
@@ -34,7 +40,7 @@ public class ServerResponder extends Thread {
                 }
 
                 case QUORUM:
-                    CoordinatorHelper.sendConsistencyTypeToServers(server, Consistency.QUORUM.toString());
+                    CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.QUORUM.toString(), oos);
                     HashMap<String, Integer> readWriteNumbers = CoordinatorHelper.getReadAndWriteServers();
                     boolean valid = CoordinatorHelper.validReadWriteServerValues(readWriteNumbers.get("Read"), readWriteNumbers.get("Write"), Coordinator.serverSockets.size());
                     if(!valid){
@@ -44,18 +50,19 @@ public class ServerResponder extends Thread {
                         break;
                     }
 
-                    ArrayList<Socket> readServers = CoordinatorHelper.getReadServers(readWriteNumbers.get("Read"));
-                    ArrayList<Socket> writeServers = CoordinatorHelper.getWriteServers(readWriteNumbers.get("Write"));
+                    ArrayList<SocketConnection> readServers = CoordinatorHelper.getReadServers(readWriteNumbers.get("Read"));
+                    ArrayList<SocketConnection> writeServers = CoordinatorHelper.getWriteServers(readWriteNumbers.get("Write"));
 
                     Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
-                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> quorumPair = CoordinatorHelper.getArticlesFromCoordinator(server, readServers);
+                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> quorumPair = CoordinatorHelper.getArticlesFromCoordinator(server.getSocket(), readServers);
                     CoordinatorHelper.sendArticlesToServers(server, quorumPair);
 
                     break;
+
                 case READ_YOUR_WRITE:
-                    CoordinatorHelper.sendConsistencyTypeToServers(server, Consistency.READ_YOUR_WRITE.toString());
+                    CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.READ_YOUR_WRITE.toString(), oos);
                     Pair<String, HashMap<Integer, ArrayList<Integer>>> rywPair = CoordinatorHelper.receiveMessageFromServer(server);
-                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> globalPair = CoordinatorHelper.getArticlesFromCoordinator(server, Coordinator.serverSockets);
+                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> globalPair = CoordinatorHelper.getArticlesFromCoordinator(server.getSocket(), Coordinator.serverSockets);
                     CoordinatorHelper.sendArticlesToServers(server, globalPair);
                     break;
                 case ERROR:
@@ -63,8 +70,10 @@ public class ServerResponder extends Thread {
                 case EXIT:
                     break;
             }
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             System.out.println("Couldn't close server sockets");;
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
 
     }

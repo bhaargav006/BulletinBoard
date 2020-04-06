@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Map;
 
 public class ServerHelper {
-    public static String[] receiveMessageFromClient(Socket socket) {
+    public static String[] receiveMessageFromClient(Socket socket,ObjectInputStream in) {
         String[] ret = null;
         try {
-            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+
             ret = (String[]) in.readObject();
 
         } catch (IOException | ClassNotFoundException e) {
@@ -151,20 +151,19 @@ public class ServerHelper {
         Server.dependencyList.put(articleId, arr);
     }
 
-
-    public static void processMessageFromClient (Socket client, Socket coordinator, Consistency type, String[]
-            message, HashMap < Integer, String > articleList, HashMap < Integer, ArrayList < Integer >> dependencyList) throws IOException, ClassNotFoundException {
+    public static void processMessageFromClient(Socket client, SocketConnection coordinator, Consistency type, String[] message, HashMap<Integer,String> articleList, HashMap<Integer,ArrayList<Integer>> dependencyList, ObjectOutputStream clientOos, ObjectInputStream clientOis) throws IOException, ClassNotFoundException {
         System.out.println("Client's request is " + message[0]);
         switch (message[0]) {
             case "Read":
                 if (type.equals(Consistency.READ_YOUR_WRITE)) {
-                    CoordinatorHelper.getArticlesFromCoordinator(coordinator, Coordinator.serverSockets);
+
+                    CoordinatorHelper.getArticlesFromCoordinator(coordinator.getSocket(), Coordinator.serverSockets);
                 }
-                else sendArticlesToClient(client, coordinator, type, articleList, dependencyList, message);
+                else sendArticlesToClient(client, coordinator, type, articleList, dependencyList, message, clientOis, clientOos);
                 break;
 
             case "Choose":
-                sendChosenArticle(client, coordinator, message[1], articleList);
+            //    sendChosenArticle(client, coordinator, message[1], articleList);
                 break;
 
             case "Post":
@@ -201,12 +200,12 @@ public class ServerHelper {
         sendMessageToClient(client, article);
     }
 
-    private static void sendWriteToCoordinator(Socket coordinator, String[] message, HashMap<Integer, ArrayList<Integer>> dependencyList)  {
+    private static void sendWriteToCoordinator(SocketConnection coordinator, String[] message, HashMap<Integer, ArrayList<Integer>> dependencyList)  {
 
         StringBuilder sb = getStringBuilder(message);
         System.out.println(sb.toString());
         try {
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(coordinator.getOutputStream());
+            ObjectOutputStream objectOutputStream = coordinator.getOos();//new ObjectOutputStream(coordinator.getOutputStream());
             objectOutputStream.writeObject(1);
             objectOutputStream.writeObject(dependencyList);
             objectOutputStream.writeObject(sb.toString());
@@ -221,7 +220,8 @@ public class ServerHelper {
 
     //TODO change local copy of server from coordinator
 
-    private static void sendReadToCoordinator(Socket coordinator, String[] message)  {
+    private static void sendReadToCoordinator(SocketConnection coordinator, String[] message)  {
+
         int flag = 0;
         if(message[0] == "Read") {
             flag = 1;
@@ -229,8 +229,8 @@ public class ServerHelper {
         StringBuilder sb = getStringBuilder(message);
         System.out.println(sb.toString());
         try {
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(coordinator.getOutputStream());
-
+//            ObjectOutputStream objectOutputStream = new ObjectOutputStream(coordinator.getOutputStream());
+            ObjectOutputStream objectOutputStream= coordinator.getOos();
             objectOutputStream.writeObject(flag);
             objectOutputStream.writeObject(message);
             System.out.println("Sent to Coordinator");
@@ -262,7 +262,7 @@ public class ServerHelper {
         return sb;
     }
 
-    private static void sendArticlesToClient(Socket client, Socket coordinator, Consistency type, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList, String[] message) {
+    private static void sendArticlesToClient(Socket client, SocketConnection coordinator, Consistency type, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList, String[] message, ObjectInputStream clois, ObjectOutputStream cloos) {
         //Send the whole object to the client
         ObjectOutputStream output = null;
         try {
@@ -274,7 +274,8 @@ public class ServerHelper {
 //            dummyList.add(0);
 //            dependencyList.put(1, dummyList);
             if(type.equals(Consistency.SEQUENTIAL)) {
-                output = new ObjectOutputStream(client.getOutputStream());
+              //  output = new ObjectOutputStream(client.getOutputStream());
+                output = cloos;
                 output.writeObject(articleList);
                 output.writeObject(dependencyList);
                 System.out.println("Sent to Client: Article: " + articleList.get(0) + " Dependency: " + dependencyList.get(1));
@@ -302,7 +303,7 @@ public class ServerHelper {
     }
 
 
-    public static void receiveMessagefromCoordinator (Socket socket, String[] message){
+    public static void receiveMessagefromCoordinator (SocketConnection socket, String[] message){
 
         //TODO read DS from coordinator
 
@@ -312,10 +313,17 @@ public class ServerHelper {
 
         ObjectInputStream objectInputStream = null;
         try {
-            objectInputStream = new ObjectInputStream(socket.getInputStream());
-            String readMessage = (String) objectInputStream.readObject();
+            objectInputStream = socket.getOis();
+            String readMesage = (String) objectInputStream.readObject();
+            System.out.println("Message from Coordiantor" + readMesage);
+            String [] rec = readMesage.split(" ");
+            String msg = "";
+            for(int i = 1; i < rec.length; i++) {
+                msg += rec[i];
+            }
+            Server.articleList.put(Integer.parseInt(rec[0]), msg);
             HashMap<Integer, ArrayList<Integer>> dependencyList = (HashMap) objectInputStream.readObject();
-
+            System.out.println("Message from coordinator::: "+dependencyList);
             Server.dependencyList.putAll(dependencyList);
         } catch (IOException e) {
             System.out.println("Can't read from coordinator");
@@ -325,14 +333,14 @@ public class ServerHelper {
 
 
         //TODO is it not getting updated. LEt us do a end to end testing tonight.
-        //How am I suppose to update the dependency list and articleList?
+        //How am I suppose to update the dependency list and articleList? I am Garima FYI
 //        updateArticleAndDependencyList()
     }
 
-    public static void receiveMapsfromCoordinator (Socket coordinator){
+    public static void receiveMapsfromCoordinator (SocketConnection coordinator){
         ObjectInputStream objectInputStream = null;
         try {
-            objectInputStream = new ObjectInputStream(coordinator.getInputStream());
+            objectInputStream =  coordinator.getOis();//new ObjectInputStream(coordinator.getInputStream());
             HashMap<Integer, String> articleList = (HashMap) objectInputStream.readObject();
             HashMap<Integer, ArrayList<Integer>> dependencyList = (HashMap) objectInputStream.readObject();
             ClientHelper.readArticles(articleList, dependencyList);
@@ -343,11 +351,12 @@ public class ServerHelper {
         }
     }
 
-    public static Consistency getConsistencyType (Socket coordinator){
+    public static Consistency getConsistencyType (SocketConnection coordinator){
         ObjectInputStream objectInputStream;
         System.out.println("Waiting to receive message from coordinator");
         try {
-            objectInputStream = new ObjectInputStream(coordinator.getInputStream());
+//            objectInputStream = new ObjectInputStream(coordinator.getInputStream());
+            objectInputStream = coordinator.getOis();
             String readMessage = (String) objectInputStream.readObject();
             return Enum.valueOf(Consistency.class, readMessage);
         } catch (IOException e) {
@@ -357,4 +366,6 @@ public class ServerHelper {
         }
         return Consistency.ERROR;
     }
+
+
 }

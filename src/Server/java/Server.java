@@ -1,4 +1,6 @@
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -8,7 +10,7 @@ import java.util.HashMap;
 
 public class Server {
 
-    Socket coordinatorSocket;
+    SocketConnection coordinatorSocket;
     static volatile HashMap<Integer, String> articleList;
     static volatile HashMap<Integer, ArrayList<Integer>> dependencyList;
     ServerSocket server;
@@ -27,7 +29,8 @@ public class Server {
         }
         try {
             InetAddress host = InetAddress.getLocalHost();
-            coordinatorSocket = new Socket(host, 8001);
+            coordinatorSocket = new SocketConnection(8001);
+
             server = new ServerSocket(port);
             type = ServerHelper.getConsistencyType(coordinatorSocket);
             System.out.println(type.toString());
@@ -36,10 +39,10 @@ public class Server {
                 Socket client = null;
                 try {
                     client = server.accept();
-
-                    Thread clientResponder = new ClientResponder(client, coordinatorSocket, type);
+                    ObjectOutputStream clOos = new ObjectOutputStream(client.getOutputStream());
+                    ObjectInputStream clOis = new ObjectInputStream(client.getInputStream());
+                    Thread clientResponder = new ClientResponder(client,coordinatorSocket, type, clOis, clOos);
                     clientResponder.start();
-
                 } catch (IOException e) {
                     client.close();
                     ((QuorumSyncThread) syncthread).stopSync();

@@ -21,12 +21,12 @@ public class CoordinatorHelper {
         return listOfServers;
     }
 
-    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> receiveMessageFromServer(Socket socket) {
+    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> receiveMessageFromServer(SocketConnection socket) {
         String message = null;
         HashMap<Integer, ArrayList<Integer>> dependencyList = null;
         try {
-            System.out.println("Server at: " + socket.getLocalPort());
-            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+            System.out.println("Server at: " + socket.getSocket().getLocalPort());
+            ObjectInputStream objectInputStream = socket.getOis();//new ObjectInputStream(socket.getInputStream());
             int isWrite = (Integer) objectInputStream.readObject();
             dependencyList = (HashMap) objectInputStream.readObject();
             message = (String) objectInputStream.readObject();
@@ -55,7 +55,7 @@ public class CoordinatorHelper {
             childList.add(latestID);
             dependencyList.put(Integer.parseInt(messageReceived[0]), childList);
         }
-
+        Coordinator.ID = latestID;
         System.out.println("The latest ID is: " + latestID);
         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<String, HashMap<Integer, ArrayList<Integer>>>(result, dependencyList);
         return pair;
@@ -68,8 +68,8 @@ public class CoordinatorHelper {
 
     public static void broadcastMessageToServers(String message, HashMap<Integer, ArrayList<Integer>> dependencyList) {
         try {
-            for (Socket server : Coordinator.serverSockets) {
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(server.getOutputStream());
+            for (SocketConnection server : Coordinator.serverSockets) {
+                ObjectOutputStream objectOutputStream = server.getOos();
                 objectOutputStream.writeObject(message);
                 objectOutputStream.writeObject(dependencyList);
                 System.out.println("Sent to Socket");
@@ -99,11 +99,12 @@ public class CoordinatorHelper {
         return false;
     }
 
-    public static void sendConsistencyTypeToServers(Socket socket, String consistency) {
+    public static void sendConsistencyTypeToServers(Socket socket, String consistency, ObjectOutputStream oos) {
         System.out.println("Sending consistency to Server");
         ObjectOutputStream objectOutputStream = null;
         try {
-            objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+//            objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+            objectOutputStream = oos;
             objectOutputStream.writeObject(consistency);
         } catch (IOException e) {
             System.out.println("Couldn't send Consistency type to server at port " + socket.getPort());
@@ -128,12 +129,13 @@ public class CoordinatorHelper {
         }
     }
 
-    public static Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> getArticlesFromCoordinator(Socket coordinator, ArrayList<Socket> serverSockets) throws IOException, ClassNotFoundException {
-        ArrayList<Socket> listOfServerSockets = serverSockets;
+
+    public static Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> getArticlesFromCoordinator(Socket coordinator, ArrayList<SocketConnection> serverSockets) throws IOException, ClassNotFoundException {
+        ArrayList<SocketConnection> listOfServerSockets = serverSockets;
         HashMap<Integer, ArrayList<Integer>> dependencyList = new HashMap<>();
         HashMap<Integer, String> articleList = new HashMap<>();
-        for (Socket socket : listOfServerSockets) {
-            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+        for (SocketConnection socket : listOfServerSockets) {
+            ObjectInputStream objectInputStream = socket.getOis();//new ObjectInputStream(socket.getInputStream());
             HashMap<Integer, String> serverArticleList = (HashMap) objectInputStream.readObject();
             HashMap<Integer, ArrayList<Integer>> serverDepenedencyList = (HashMap) objectInputStream.readObject();
 
@@ -168,25 +170,25 @@ public class CoordinatorHelper {
         return pair;
     }
 
-    public static ArrayList<Socket> getReadServers(Integer read) {
-        ArrayList<Socket> readServers = new ArrayList();
+    public static ArrayList<SocketConnection> getReadServers(Integer read) {
+        ArrayList<SocketConnection> readServers = new ArrayList();
         for (int i = 0; i < read; i++) {
             readServers.add(Coordinator.serverSockets.get(i));
         }
         return readServers;
     }
 
-    public static ArrayList<Socket> getWriteServers(Integer write) {
-        ArrayList<Socket> writeServers = new ArrayList();
+    public static ArrayList<SocketConnection> getWriteServers(Integer write) {
+        ArrayList<SocketConnection> writeServers = new ArrayList();
         for (int i = Coordinator.serverSockets.size() - 1; i >= (Coordinator.serverSockets.size() - write); i--) {
             writeServers.add(Coordinator.serverSockets.get(i));
         }
         return writeServers;
     }
 
-    public static void sendArticlesToServers(Socket server, Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> globalPair) {
+    public static void sendArticlesToServers(SocketConnection server, Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> globalPair) {
         try {
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(server.getOutputStream());
+            ObjectOutputStream objectOutputStream = server.getOos();//new ObjectOutputStream(server.getOutputStream());
             objectOutputStream.writeObject(globalPair);
 
         } catch (IOException e) {

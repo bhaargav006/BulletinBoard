@@ -1,6 +1,8 @@
 import javafx.util.Pair;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -14,7 +16,7 @@ public class Coordinator {
 
     static volatile HashMap<String, String> serverMessageQueue;
     static volatile int ID;
-    static volatile ArrayList<Socket> serverSockets;
+    static volatile ArrayList<SocketConnection> serverSockets;
     Consistency type;
 
     public Coordinator(int port) {
@@ -42,7 +44,10 @@ public class Coordinator {
                 Socket server = null;
                 try {
                     server = coordinator.accept();
-                    Thread serverResponder = new ServerResponder(server,type);
+//                    ObjectOutputStream oos = new ObjectOutputStream(server.getOutputStream());
+//                    ObjectInputStream ois = new ObjectInputStream(server.getInputStream());
+                    SocketConnection sc = new SocketConnection(server);
+                    Thread serverResponder = new ServerResponder(sc,type);
                     serverResponder.start();
 
 
