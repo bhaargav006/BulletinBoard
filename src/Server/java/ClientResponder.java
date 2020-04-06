@@ -27,49 +27,32 @@ public class ClientResponder extends Thread {
 
     @Override
     public void run(){
-//        ObjectInputStream in = null;
-//        try {
-//            in = new ObjectInputStream(client.getInputStream());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+
         try {
-
-            while(true) {
-                System.out.println("Waiting for the client to join");
-                String[] message = ServerHelper.receiveMessageFromClient(client, clientOis);
-                System.out.println("Request Type : "+ message[0]);
-                ServerHelper.processMessageFromClient(client, coordinator, type, message,Server.articleList,Server.dependencyList, clientOos, clientOis);
-                //client.close();
-              //  ServerHelper.receiveMapsfromCoordinator(coordinator);
+            while (true) {
+                switch (type) {
+                    case SEQUENTIAL:
+                        String[] message = ServerHelper.receiveMessageFromClient(client, clientOis);
+                        System.out.println("Request Type : " + message[0]);
+                        ServerHelper.processMessageFromClient(client, coordinator, type, message, Server.articleList, Server.dependencyList, clientOos, clientOis);
+                        break;
+                    case QUORUM:
+                        break;
+                    case READ_YOUR_WRITE:
+                        String[] clientMessage = ServerHelper.receiveMessageFromClient(client, clientOis);
+                        try {
+                            ServerHelper.processMessageFromClient(client, coordinator, type, clientMessage, Server.articleList, Server.dependencyList, clientOos, clientOis);
+                            ServerHelper.receiveMapsfromCoordinator(coordinator);
+                        } catch (IOException | ClassNotFoundException e1) {
+                            e1.printStackTrace();
+                        }
+                        break;
+                }
             }
-        } catch (Exception e) {
-            System.out.println("Exception in ClientResponder");
-//            switch(type){
-//                case SEQUENTIAL:
-//                    String[] message = ServerHelper.receiveMessageFromClient(client, in);
-//                    try {
-//                        ServerHelper.processMessageFromClient(client, coordinator, type, message,Server.articleList,Server.dependencyList,clientOos, clientOis);
-//                    } catch (IOException | ClassNotFoundException e1) {
-//                        e1.printStackTrace();
-//                    }
-//                case QUORUM:
-//                case READ_YOUR_WRITE:
-//                    String[] clientMessage = ServerHelper.receiveMessageFromClient(client, in);
-//                    try {
-//                        ServerHelper.processMessageFromClient(client, coordinator, type, clientMessage,Server.articleList,Server.dependencyList);
-//                    } catch (IOException | ClassNotFoundException e1) {
-//                        e1.printStackTrace();
-//                    }
-//                    ServerHelper.receiveMapsfromCoordinator(coordinator);
-//            }
-
         }
-// catch (ClassNotFoundException e) {
-//            System.out.println("Couldn't close client socket");
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
+        catch (Exception e) {
+            System.out.println("error in Cleint Responder" + e);
+        }
 
     }
 }

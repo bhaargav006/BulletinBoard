@@ -21,41 +21,42 @@ public class CoordinatorHelper {
         return listOfServers;
     }
 
-    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> receiveMessageFromServer(SocketConnection socket, int ID) {
-        //TODO has to be decoupled. It also processed the message right now. Change this to 2 functions for reusability.
-        String result = null;
-        int latestID;
-        String[] messageReceived = null;
+    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> receiveMessageFromServer(SocketConnection socket) {
+        String message = null;
         HashMap<Integer, ArrayList<Integer>> dependencyList = null;
-        ArrayList<Integer> childList = null;
         try {
             System.out.println("Server at: " + socket.getSocket().getLocalPort());
             ObjectInputStream objectInputStream = socket.getOis();//new ObjectInputStream(socket.getInputStream());
             int isWrite = (Integer) objectInputStream.readObject();
             dependencyList = (HashMap) objectInputStream.readObject();
-            String message = (String) objectInputStream.readObject();
+            message = (String) objectInputStream.readObject();
 
-            // Gets the latest ID depending on whether it is post or reply.
-            messageReceived = message.split("-");
-            if (messageReceived.length >= 1) {
-                latestID = getLatestID(socket.getSocket(), messageReceived[0], ID);
-                result = latestID + " " + messageReceived[0];
-            } else {
-                latestID = getLatestID(socket.getSocket(), messageReceived[0], ID);
-                result = latestID + " " + messageReceived[0] + " " + messageReceived[1];
-                childList = dependencyList.get(messageReceived[0]);
-                childList.add(latestID);
-                dependencyList.put(Integer.parseInt(messageReceived[0]), childList);
-            }
-            Coordinator.ID = latestID;
-            System.out.println("The latest ID is: " + latestID);
-
-        } catch (IOException e) {
-            System.out.println("Error while receiving message from Server");
-        } catch (ClassNotFoundException e) {
-            System.out.println("Couldn't read object from server");
+        } catch (IOException | ClassNotFoundException e1){
+            System.out.println("Couldn't receive message from server");
         }
+        Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<String, HashMap<Integer, ArrayList<Integer>>>(message, dependencyList);
+        return pair;
+    }
 
+    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> processMessageReceivedFromServer(Socket server, Consistency type, String message, HashMap<Integer, ArrayList<Integer>> dependencyList, int id) {
+        // Gets the latest ID depending on whether it is post or reply.
+        String[] messageReceived = null;
+        int latestID;
+        String result = "";
+        ArrayList<Integer> childList = null;
+        messageReceived = message.split("-");
+        if (messageReceived.length >= 1) {
+            latestID = getLatestID(server, messageReceived[0],id);
+            result = latestID + " " + messageReceived[0];
+        } else {
+            latestID = getLatestID(server, messageReceived[0], id);
+            result = latestID + " " + messageReceived[0] + " " + messageReceived[1];
+            childList = dependencyList.get(messageReceived[0]);
+            childList.add(latestID);
+            dependencyList.put(Integer.parseInt(messageReceived[0]), childList);
+        }
+        Coordinator.ID = latestID;
+        System.out.println("The latest ID is: " + latestID);
         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<String, HashMap<Integer, ArrayList<Integer>>>(result, dependencyList);
         return pair;
     }
@@ -128,8 +129,9 @@ public class CoordinatorHelper {
         }
     }
 
-    public static Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> getArticlesFromCoordinator(Socket coordinator) throws IOException, ClassNotFoundException {
-        ArrayList<SocketConnection> listOfServerSockets = Coordinator.serverSockets;
+
+    public static Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> getArticlesFromCoordinator(Socket coordinator, ArrayList<SocketConnection> serverSockets) throws IOException, ClassNotFoundException {
+        ArrayList<SocketConnection> listOfServerSockets = serverSockets;
         HashMap<Integer, ArrayList<Integer>> dependencyList = new HashMap<>();
         HashMap<Integer, String> articleList = new HashMap<>();
         for (SocketConnection socket : listOfServerSockets) {
@@ -168,20 +170,31 @@ public class CoordinatorHelper {
         return pair;
     }
 
-    public static ArrayList<Socket> getReadServers(Integer read) {
-        ArrayList<Socket> readServers = new ArrayList();
+    public static ArrayList<SocketConnection> getReadServers(Integer read) {
+        ArrayList<SocketConnection> readServers = new ArrayList();
         for (int i = 0; i < read; i++) {
-            readServers.add(Coordinator.serverSockets.get(i).getSocket());
+            readServers.add(Coordinator.serverSockets.get(i));
         }
         return readServers;
     }
 
-    public static ArrayList<Socket> getWriteServers(Integer write) {
-        ArrayList<Socket> writeServers = new ArrayList();
+    public static ArrayList<SocketConnection> getWriteServers(Integer write) {
+        ArrayList<SocketConnection> writeServers = new ArrayList();
         for (int i = Coordinator.serverSockets.size() - 1; i >= (Coordinator.serverSockets.size() - write); i--) {
-            writeServers.add(Coordinator.serverSockets.get(i).getSocket());
+            writeServers.add(Coordinator.serverSockets.get(i));
         }
         return writeServers;
+    }
+
+    public static void sendArticlesToServers(SocketConnection server, Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> globalPair) {
+        try {
+            ObjectOutputStream objectOutputStream = server.getOos();//new ObjectOutputStream(server.getOutputStream());
+            objectOutputStream.writeObject(globalPair);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 }
 

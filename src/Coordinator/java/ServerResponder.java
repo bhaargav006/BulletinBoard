@@ -29,9 +29,10 @@ public class ServerResponder extends Thread {
                 case SEQUENTIAL: {
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.SEQUENTIAL.toString(), oos);
                     while (!type.equals(Consistency.ERROR)) {
-                        Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.ID);
-                        System.out.println("in cooridnator " + pair.getKey()+ " " + pair.getValue());
-                        CoordinatorHelper.broadcastMessageToServers(pair.getKey(), pair.getValue());
+
+                        Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
+                        Pair<String, HashMap<Integer, ArrayList<Integer>>> newPair = CoordinatorHelper.processMessageReceivedFromServer(server.getSocket(), type, pair.getKey(), pair.getValue(), Coordinator.ID);
+                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue());
                     }
                     server.close();
                     System.out.println("Socket Closed");
@@ -49,20 +50,21 @@ public class ServerResponder extends Thread {
                         break;
                     }
 
-                    ArrayList<Socket> readServers = CoordinatorHelper.getReadServers(readWriteNumbers.get("Read"));
-                    ArrayList<Socket> writeServers = CoordinatorHelper.getWriteServers(readWriteNumbers.get("Write"));
+                    ArrayList<SocketConnection> readServers = CoordinatorHelper.getReadServers(readWriteNumbers.get("Read"));
+                    ArrayList<SocketConnection> writeServers = CoordinatorHelper.getWriteServers(readWriteNumbers.get("Write"));
 
-                    Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.ID);
-
+                    Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
+                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> quorumPair = CoordinatorHelper.getArticlesFromCoordinator(server.getSocket(), readServers);
+                    CoordinatorHelper.sendArticlesToServers(server, quorumPair);
 
                     break;
-//                case READ_YOUR_WRITE:
-//                    CoordinatorHelper.sendConsistencyTypeToServers(server, Consistency.SEQUENTIAL.toString(), oos);
-//                    Pair<String, HashMap<Integer, ArrayList<Integer>>> rywPair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.ID);
-//                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> globalPair = CoordinatorHelper.getArticlesFromCoordinator(server);
-//                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(server.getOutputStream());
-//                    objectOutputStream.writeObject(globalPair);
-//                    break;
+
+                case READ_YOUR_WRITE:
+                    CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.READ_YOUR_WRITE.toString(), oos);
+                    Pair<String, HashMap<Integer, ArrayList<Integer>>> rywPair = CoordinatorHelper.receiveMessageFromServer(server);
+                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> globalPair = CoordinatorHelper.getArticlesFromCoordinator(server.getSocket(), Coordinator.serverSockets);
+                    CoordinatorHelper.sendArticlesToServers(server, globalPair);
+                    break;
                 case ERROR:
                     break;
                 case EXIT:
@@ -70,6 +72,8 @@ public class ServerResponder extends Thread {
             }
         } catch (IOException e) {
             System.out.println("Couldn't close server sockets");;
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
 
     }

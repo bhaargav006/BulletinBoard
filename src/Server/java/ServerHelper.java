@@ -151,14 +151,15 @@ public class ServerHelper {
         Server.dependencyList.put(articleId, arr);
     }
 
-    public static void processMessageFromClient(Socket client, SocketConnection coordinator, Consistency type, String[] message, HashMap<Integer,String> articleList, HashMap<Integer,ArrayList<Integer>> dependencyList, ObjectOutputStream clientOos, ObjectInputStream clientOis) {
+    public static void processMessageFromClient(Socket client, SocketConnection coordinator, Consistency type, String[] message, HashMap<Integer,String> articleList, HashMap<Integer,ArrayList<Integer>> dependencyList, ObjectOutputStream clientOos, ObjectInputStream clientOis) throws IOException, ClassNotFoundException {
         System.out.println("Client's request is " + message[0]);
         switch (message[0]) {
             case "Read":
                 if (type.equals(Consistency.READ_YOUR_WRITE)) {
-                   // CoordinatorHelper.getArticlesFromCoordinator(coordinator);
+
+                    CoordinatorHelper.getArticlesFromCoordinator(coordinator.getSocket(), Coordinator.serverSockets);
                 }
-                else sendArticlesToClient(client, coordinator, type, articleList,dependencyList, message, clientOis, clientOos);
+                else sendArticlesToClient(client, coordinator, type, articleList, dependencyList, message, clientOis, clientOos);
                 break;
 
             case "Choose":
@@ -221,13 +222,16 @@ public class ServerHelper {
 
     private static void sendReadToCoordinator(SocketConnection coordinator, String[] message)  {
 
+        int flag = 0;
+        if(message[0] == "Read") {
+            flag = 1;
+        }
         StringBuilder sb = getStringBuilder(message);
         System.out.println(sb.toString());
         try {
 //            ObjectOutputStream objectOutputStream = new ObjectOutputStream(coordinator.getOutputStream());
             ObjectOutputStream objectOutputStream= coordinator.getOos();
-            objectOutputStream.writeObject(0);
-            //TODO add read/choose flag here itself
+            objectOutputStream.writeObject(flag);
             objectOutputStream.writeObject(message);
             System.out.println("Sent to Coordinator");
             receiveMessagefromCoordinator(coordinator, message);
@@ -327,15 +331,16 @@ public class ServerHelper {
             System.out.println("Couldn't convert the message received from coordinator");
         }
 
+
         //TODO is it not getting updated. LEt us do a end to end testing tonight.
         //How am I suppose to update the dependency list and articleList? I am Garima FYI
 //        updateArticleAndDependencyList()
     }
 
-    public static void receiveMapsfromCoordinator (Socket coordinator){
+    public static void receiveMapsfromCoordinator (SocketConnection coordinator){
         ObjectInputStream objectInputStream = null;
         try {
-            objectInputStream = new ObjectInputStream(coordinator.getInputStream());
+            objectInputStream =  coordinator.getOis();//new ObjectInputStream(coordinator.getInputStream());
             HashMap<Integer, String> articleList = (HashMap) objectInputStream.readObject();
             HashMap<Integer, ArrayList<Integer>> dependencyList = (HashMap) objectInputStream.readObject();
             ClientHelper.readArticles(articleList, dependencyList);
