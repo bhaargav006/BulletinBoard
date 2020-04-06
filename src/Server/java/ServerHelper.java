@@ -194,16 +194,13 @@ public class ServerHelper {
         System.out.println("Article ID is " + articleID);
 
         if(type.equals(Consistency.QUORUM)) {
-            try {
-                ServerHelper.synch();
-                String article = articleList.get(articleID);
-                if (article == null || article == "")
-                    article = "Invalid article ID. There is no such article";
-                sendMessageToClient(client, article);
-            } catch (IOException | ClassNotFoundException e) {
-                System.out.println("Error while getting updated list from the servers");
-            }
+            //ServerHelper.synch();
         }
+        String article = articleList.get(articleID);
+        if (article == null || article == "")
+            article = "Invalid article ID. There is no such article";
+        sendMessageToClient(client, article);
+
 
     }
 
@@ -291,7 +288,7 @@ public class ServerHelper {
              * Get updated articleList after contacting Nr servers
              */
             if(type.equals(Consistency.QUORUM)) {
-                ServerHelper.synch();
+//                ServerHelper.synch();
             }
               //  output = new ObjectOutputStream(client.getOutputStream());
             output = cloos;
@@ -300,18 +297,17 @@ public class ServerHelper {
             output.reset();
             System.out.println("Sent to Client: Article: " + Server.articleList + " Dependency: " + dependencyList);
 
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             System.out.println("Can't send message back to the client");
         }
     }
 
     public static void sendMessageToClient (ObjectOutputStream socket, String message){
         //Send the string message to the client
-        ObjectOutputStream output = null;
         try {
-            output = new ObjectOutputStream(socket);
-            output.writeObject(message);
-            System.out.println("Sent the article to Client");
+            socket.writeObject(message);
+            socket.reset();
+            System.out.println("Sent the article to Client: " + message);
 
         } catch (IOException e) {
             System.out.println("Can't send message back to the client");

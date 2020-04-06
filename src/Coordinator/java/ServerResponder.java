@@ -15,6 +15,7 @@ public class ServerResponder extends Thread {
     public ServerResponder(SocketConnection server, Consistency type){
         this.server = server;
         this.type = type;
+        Coordinator.serverSockets.add(server);
         this.oos = server.getOos();
         this.ois = server.getOis();
     }
@@ -29,8 +30,8 @@ public class ServerResponder extends Thread {
                     while (!type.equals(Consistency.ERROR)) {
 
                         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
-                        Pair<String, HashMap<Integer, ArrayList<Integer>>> newPair = CoordinatorHelper.processMessageReceivedFromServer(server.getSocket(), type, pair.getKey(), pair.getValue(), Coordinator.ID);
-                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue());
+                        Pair<String, HashMap<Integer, ArrayList<Integer>>> newPair = CoordinatorHelper.processMessageReceivedFromServer(server.getSocket(),pair.getKey(), pair.getValue(), Coordinator.ID);
+                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue(), Coordinator.serverSockets);
                     }
                     server.close();
                     System.out.println("Socket Closed");
@@ -50,23 +51,14 @@ public class ServerResponder extends Thread {
                             break;
                         }
 
-                        //All sockets are coordinator
-                        ArrayList<SocketConnection> readServers = CoordinatorHelper.getReadServers(Coordinator.readWriteNumbers.get("Read"));
                         ArrayList<SocketConnection> writeServers = CoordinatorHelper.getWriteServers(Coordinator.readWriteNumbers.get("Write"));
-
-
                         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
-                        if(pair.getValue()==null){
-                            Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> quorumPair = CoordinatorHelper.getArticlesFromCoordinator(server.getSocket(), readServers);
-                            CoordinatorHelper.sendArticlesToServers(server, quorumPair);
-                        }
-                        else {
-                            for (SocketConnection sc : writeServers){
-                                //CoordinatorHelper.sendArticlesToServers(sc, quorumPair);
-                            }
-                        }
+                        Pair<String, HashMap<Integer, ArrayList<Integer>>> newPair = CoordinatorHelper.processMessageReceivedFromServer(server.getSocket(), pair.getKey(), pair.getValue(), Coordinator.ID);
+                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue(), writeServers);
 
                     }
+                    server.close();
+                    System.out.println("Socket Closed");
                     break;
                 }
 

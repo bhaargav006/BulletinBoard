@@ -27,9 +27,12 @@ public class Client {
                     case "R":
                         message = "Read";
                         break;
-                    case "C":
-                        message = "Choose 0";
+                    case "C": {
+                        System.out.print("Enter Article Id:\n");
+                        String id = in.nextLine();
+                        message = "Choose " + id;
                         break;
+                    }
                     case "Rep":
                         System.out.println("Enter Article Id");
                         String id = in.nextLine();

@@ -21,7 +21,6 @@ public class ClientResponder extends Thread {
         this.client = client;
         this.coordinator = coordinatorSocket;
         this.type = type;
-
         this.clientOis = clOis;
         this.clientOos = clOos;
     }
@@ -32,14 +31,18 @@ public class ClientResponder extends Thread {
         try {
             while (true) {
                 switch (type) {
-                    case SEQUENTIAL:
+                    case SEQUENTIAL: {
                         String[] message = ServerHelper.receiveMessageFromClient(client, clientOis);
                         System.out.println("Request Type : " + message[0]);
                         ServerHelper.processMessageFromClient(client, coordinator, type, message, Server.articleList, Server.dependencyList, clientOos, clientOis);
                         break;
-                    case QUORUM:
-
+                    }
+                    case QUORUM: {
+                        String[] qmessage = ServerHelper.receiveMessageFromClient(client, clientOis);
+                        System.out.println("Request Type : " + qmessage[0]);
+                        ServerHelper.processMessageFromClient(client, coordinator, type, qmessage, Server.articleList, Server.dependencyList, clientOos, clientOis);
                         break;
+                    }
                     case READ_YOUR_WRITE:
                         String[] clientMessage = ServerHelper.receiveMessageFromClient(client, clientOis);
                         try {

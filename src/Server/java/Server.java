@@ -26,11 +26,11 @@ public class Server {
             server = new ServerSocket(port);
             type = ServerHelper.getConsistencyType(coordinatorSocket);
             System.out.println(type.toString());
-            Thread syncthread = null;
-            if(Consistency.QUORUM == type) {
-                syncthread = new QuorumSyncThread();
-                new Thread(syncthread).start();
-            }
+//            Thread syncthread = null;
+//            if(Consistency.QUORUM == type) {
+//                syncthread = new QuorumSyncThread();
+//                new Thread(syncthread).start();
+//            }
             while(true) {
 
                 Socket client = null;
@@ -42,7 +42,7 @@ public class Server {
                     clientResponder.start();
                 } catch (IOException e) {
                     client.close();
-                    ((QuorumSyncThread) syncthread).stopSync();
+                    //((QuorumSyncThread) syncthread).stopSync();
                     System.out.println("Error in the server sockets while accepting clients");
                 }
             }

@@ -39,6 +39,7 @@ public class CoordinatorHelper {
 
             dependencyList = (HashMap) objectInputStream.readObject();
             message = (String) objectInputStream.readObject();
+//            System.out.println("Ffrom server:" + message + " " + dependencyList);
 
         } catch (IOException | ClassNotFoundException e1){
             System.out.println("Couldn't receive message from server");
@@ -46,14 +47,14 @@ public class CoordinatorHelper {
         return new Pair<>(message, dependencyList);
     }
 
-    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> processMessageReceivedFromServer(Socket server, Consistency type, String message, HashMap<Integer, ArrayList<Integer>> dependencyList, int id) {
+    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> processMessageReceivedFromServer(Socket server, String message, HashMap<Integer, ArrayList<Integer>> dependencyList, int id) {
         // Gets the latest ID depending on whether it is post or reply.
         String[] messageReceived = null;
         int latestID;
         String result = "";
         ArrayList<Integer> childList = new ArrayList<>();
         messageReceived = message.split("-");
-        System.out.println(message);
+//        System.out.println(message);
         if (messageReceived.length < 2) {
             latestID = getLatestID(server, messageReceived[0],id);
             result = latestID + " " + messageReceived[0];
@@ -69,7 +70,7 @@ public class CoordinatorHelper {
             }
             dependencyList.put(Integer.parseInt(messageReceived[0]), childList);
         }
-        System.out.println(dependencyList);
+//        System.out.println(dependencyList);
         Coordinator.ID = latestID;
         System.out.println("The latest ID is: " + latestID);
         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<String, HashMap<Integer, ArrayList<Integer>>>(result, dependencyList);
@@ -81,11 +82,11 @@ public class CoordinatorHelper {
         return latestID;
     }
 
-    public static void broadcastMessageToServers(String message, HashMap<Integer, ArrayList<Integer>> dependencyList) {
+    public static void broadcastMessageToServers(String message, HashMap<Integer, ArrayList<Integer>> dependencyList, ArrayList<SocketConnection> writeServers) {
         System.out.println(dependencyList);
         String dl = convertToString(dependencyList);
         try {
-            for (SocketConnection server : Coordinator.serverSockets) {
+            for (SocketConnection server : writeServers) {
                 ObjectOutputStream objectOutputStream = server.getOos();
                 objectOutputStream.writeObject(message);
                 objectOutputStream.writeObject(dl);
