@@ -15,10 +15,8 @@ public class Client {
         System.out.println("");
         String message = "";
         //TODO: Change the data sent based on the input from the user
-        InetAddress host = InetAddress.getLocalHost();
         try {
             SocketConnection socketConnection = new SocketConnection(8000);
-            SocketConnection socketConnection1 = new SocketConnection(8000);
             Boolean exit = true;
             while(exit){
                 System.out.println("[P] Post \n[R] Read \n[C] Choose \n[Rep] Reply \n");

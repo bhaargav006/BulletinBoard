@@ -1,14 +1,12 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ClientHelper {
     public static void sendMessageToServer(SocketConnection socket, String[] message, int flag) throws IOException {
         socket.getOos().writeObject(message);
-        System.out.println("Sent to Socket");
+        System.out.println("Sent to Server");
         if(flag==1)
             receiveMessageFromServer(socket, 0);
         if(flag==2)
@@ -21,10 +19,10 @@ public class ClientHelper {
         HashMap<Integer, ArrayList<Integer>> dependencyList = null;
         String choose = null;
         try {
-            System.out.println("I'm here too");
+
             //ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
             ObjectInputStream in = socket.getOis();
-            System.out.println("falg" + flag);
+            //System.out.println("flag" + flag);
             if(flag==0){
                 choose= (String) in.readObject();
                 System.out.println(choose);
@@ -32,7 +30,7 @@ public class ClientHelper {
             else if(flag==1){
                 articleList = (HashMap) in.readObject();
                 dependencyList = (HashMap) in.readObject();
-                System.out.println("Got articleList and dependencyList from the server" + articleList.size() + dependencyList.size());
+                //System.out.println("Got articleList and dependencyList from the server" + articleList.size() + dependencyList.size());
                 readArticles(articleList, dependencyList);
             }
 

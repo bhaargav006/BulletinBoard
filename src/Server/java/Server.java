@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -16,22 +15,22 @@ public class Server {
     ServerSocket server;
     Consistency type;
 
-    public Server(int port, String arg) {
+    public Server(int port) {
 
         articleList = new HashMap<Integer, String>();
         dependencyList = new HashMap<Integer, ArrayList<Integer>>();
-        type = Enum.valueOf(Consistency.class,arg);
         server = null;
-        Thread syncthread = null;
-        if(Consistency.QUORUM == type) {
-            syncthread = new QuorumSyncThread();
-            new Thread(syncthread).start();
-        }
+
         try {
             coordinatorSocket = new SocketConnection(8001);
             server = new ServerSocket(port);
             type = ServerHelper.getConsistencyType(coordinatorSocket);
             System.out.println(type.toString());
+            Thread syncthread = null;
+            if(Consistency.QUORUM == type) {
+                syncthread = new QuorumSyncThread();
+                new Thread(syncthread).start();
+            }
             while(true) {
 
                 Socket client = null;
@@ -56,6 +55,6 @@ public class Server {
     }
     public static void main(String[] args)  {
 
-        Server server = new Server(8000, "SEQUENTIAL");
+        Server server = new Server(Integer.parseInt(args[0]));
     }
 }

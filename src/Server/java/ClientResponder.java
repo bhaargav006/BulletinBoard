@@ -21,6 +21,7 @@ public class ClientResponder extends Thread {
         this.client = client;
         this.coordinator = coordinatorSocket;
         this.type = type;
+
         this.clientOis = clOis;
         this.clientOos = clOos;
     }
@@ -37,6 +38,7 @@ public class ClientResponder extends Thread {
                         ServerHelper.processMessageFromClient(client, coordinator, type, message, Server.articleList, Server.dependencyList, clientOos, clientOis);
                         break;
                     case QUORUM:
+
                         break;
                     case READ_YOUR_WRITE:
                         String[] clientMessage = ServerHelper.receiveMessageFromClient(client, clientOis);

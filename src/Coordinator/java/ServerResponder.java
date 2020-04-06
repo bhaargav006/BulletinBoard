@@ -40,31 +40,33 @@ public class ServerResponder extends Thread {
 
                 case QUORUM: {
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.QUORUM.toString(), oos);
-                    HashMap<String, Integer> readWriteNumbers = CoordinatorHelper.getReadAndWriteServers();
-                    boolean valid = CoordinatorHelper.validReadWriteServerValues(readWriteNumbers.get("Read"), readWriteNumbers.get("Write"), Coordinator.serverSockets.size());
-                    if (!valid) {
-                        System.out.println("Invalid number of read and write servers!");
-                        System.out.println("Closing Sockets");
-                        server.close();
+                    while (!type.equals(Consistency.ERROR)) {
+
+                        HashMap<String, Integer> readWriteNumbers = CoordinatorHelper.getReadAndWriteServers();
+                        boolean valid = CoordinatorHelper.validReadWriteServerValues(readWriteNumbers.get("Read"), readWriteNumbers.get("Write"), Coordinator.serverSockets.size());
+                        if (!valid) {
+                            System.out.println("Invalid number of read and write servers!");
+                            System.out.println("Closing Sockets");
+                            server.close();
+                            break;
+                        }
+
+                        ArrayList<SocketConnection> readServers = CoordinatorHelper.getReadServers(readWriteNumbers.get("Read"));
+                        ArrayList<SocketConnection> writeServers = CoordinatorHelper.getWriteServers(readWriteNumbers.get("Write"));
+
+
+                        Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
+                        if(pair.getValue()==null){
+                            Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> quorumPair = CoordinatorHelper.getArticlesFromCoordinator(server.getSocket(), readServers);
+                            CoordinatorHelper.sendArticlesToServers(server, quorumPair);
+                        }
+                        else {
+                            for (SocketConnection sc : writeServers){
+                                //CoordinatorHelper.sendArticlesToServers(sc, quorumPair);
+                            }
+                        }
                         break;
                     }
-
-                    ArrayList<SocketConnection> readServers = CoordinatorHelper.getReadServers(readWriteNumbers.get("Read"));
-                    ArrayList<SocketConnection> writeServers = CoordinatorHelper.getWriteServers(readWriteNumbers.get("Write"));
-
-
-                    Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
-                    if(pair.getValue()==null){
-                        Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> quorumPair = CoordinatorHelper.getArticlesFromCoordinator(server.getSocket(), readServers);
-                        CoordinatorHelper.sendArticlesToServers(server, quorumPair);
-                    }
-                    else {
-                        for (SocketConnection sc : writeServers){
-                            //CoordinatorHelper.sendArticlesToServers(sc, quorumPair);
-                        }
-                    }
-
-                    break;
                 }
 
                 case READ_YOUR_WRITE: {

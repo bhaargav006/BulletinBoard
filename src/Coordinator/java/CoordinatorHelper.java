@@ -8,7 +8,7 @@ public class CoordinatorHelper {
 
     public static ArrayList<String> getServerIPAndPort() throws IOException {
         ArrayList<String> listOfServers = new ArrayList<>();
-        File file = new File("src/serverList.properties");
+        File file = new File("serverList.properties");
         FileInputStream fileInputStream = new FileInputStream(file);
         Properties prop = new Properties();
         prop.load(fileInputStream);
@@ -32,10 +32,10 @@ public class CoordinatorHelper {
             /**
              * Read request in the case of quorum
              */
-            if(requestFlag<2){
-                message = (String) objectInputStream.readObject();
-                return new Pair<>(message, null);
-            }
+//            if(requestFlag<2){
+//                message = (String) objectInputStream.readObject();
+//                return new Pair<>(message, null);
+//            }
 
             dependencyList = (HashMap) objectInputStream.readObject();
             message = (String) objectInputStream.readObject();

@@ -290,6 +290,9 @@ public class ServerHelper {
                 dependencyList.put(1, dummyList);
              */
 
+            /**
+             * Get updated articleList after contacting Nr servers
+             */
             if(type.equals(Consistency.QUORUM)) {
                 ServerHelper.synch();
             }
