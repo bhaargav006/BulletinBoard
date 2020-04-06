@@ -15,7 +15,6 @@ public class ServerResponder extends Thread {
     public ServerResponder(SocketConnection server, Consistency type){
         this.server = server;
         this.type = type;
-        Coordinator.serverSockets.add(server);
         this.oos = server.getOos();
         this.ois = server.getOis();
     }
@@ -42,8 +41,8 @@ public class ServerResponder extends Thread {
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.QUORUM.toString(), oos);
                     while (!type.equals(Consistency.ERROR)) {
 
-                        HashMap<String, Integer> readWriteNumbers = CoordinatorHelper.getReadAndWriteServers();
-                        boolean valid = CoordinatorHelper.validReadWriteServerValues(readWriteNumbers.get("Read"), readWriteNumbers.get("Write"), Coordinator.serverSockets.size());
+
+                        boolean valid = CoordinatorHelper.validReadWriteServerValues(Coordinator.readWriteNumbers.get("Read"), Coordinator.readWriteNumbers.get("Write"), Coordinator.serverSockets.size());
                         if (!valid) {
                             System.out.println("Invalid number of read and write servers!");
                             System.out.println("Closing Sockets");
@@ -51,8 +50,9 @@ public class ServerResponder extends Thread {
                             break;
                         }
 
-                        ArrayList<SocketConnection> readServers = CoordinatorHelper.getReadServers(readWriteNumbers.get("Read"));
-                        ArrayList<SocketConnection> writeServers = CoordinatorHelper.getWriteServers(readWriteNumbers.get("Write"));
+                        //All sockets are coordinator
+                        ArrayList<SocketConnection> readServers = CoordinatorHelper.getReadServers(Coordinator.readWriteNumbers.get("Read"));
+                        ArrayList<SocketConnection> writeServers = CoordinatorHelper.getWriteServers(Coordinator.readWriteNumbers.get("Write"));
 
 
                         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
@@ -65,8 +65,9 @@ public class ServerResponder extends Thread {
                                 //CoordinatorHelper.sendArticlesToServers(sc, quorumPair);
                             }
                         }
-                        break;
+
                     }
+                    break;
                 }
 
                 case READ_YOUR_WRITE: {

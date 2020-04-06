@@ -11,6 +11,7 @@ public class Coordinator {
     static volatile HashMap<String, String> serverMessageQueue;
     static volatile int ID;
     static volatile ArrayList<SocketConnection> serverSockets;
+    static volatile HashMap<String, Integer> readWriteNumbers;
     Consistency type;
 
     public Coordinator(int port) {
@@ -32,8 +33,11 @@ public class Coordinator {
 
         System.out.println("Starting Coordinator and implementing " + type.toString() + " Consistency");
         ServerSocket coordinator;
+
         try {
             coordinator = new ServerSocket(port);
+            readWriteNumbers = CoordinatorHelper.getReadAndWriteServers();
+
             while(true){
                 Socket server;
                 try {

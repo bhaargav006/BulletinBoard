@@ -1,9 +1,4 @@
-import javax.xml.bind.SchemaOutputResolver;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
@@ -43,7 +38,7 @@ public class Client {
                         message = "Reply " +id +" " +msg;
                         break;
                     case "Exit":
-                       // socket.close();
+                        socketConnection.close();
                         exit = false;
                         break;
                     default:

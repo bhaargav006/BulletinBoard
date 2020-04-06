@@ -32,11 +32,8 @@ public class ServerHelper {
         //get max id from coordinator
         int cport = 8001; //set port of coordinator
         Socket coordinatorPort = new Socket(chost, cport);
-        ObjectOutputStream coos = new ObjectOutputStream(coordinatorPort.getOutputStream());
-        ObjectInputStream cois = new ObjectInputStream(coordinatorPort.getInputStream());
-        coos.writeUTF("getLatestId");
-        int latestId = Integer.parseInt(cois.readUTF());
-
+        int latestId = Coordinator.ID;
+        System.out.println("Latest ID is " + latestId);
         //get local maps from servers and create a global map with all the entries
         HashMap<Integer, String> globalArticleMap = new HashMap<>();
         HashMap<String, List<Integer>> missingArticleMapForEachServer = new HashMap<>();

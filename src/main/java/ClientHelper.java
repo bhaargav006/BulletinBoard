@@ -68,7 +68,7 @@ public class ClientHelper {
            // System.out.print("\t");
             for(int i = 0; i < childList.size(); i++){
                 if(visitedArray[childList.get(i) - 1] == false){
-                    for(int t = 0; t <=git  spaces; t++) System.out.print("\t");
+                    for(int t = 0; t <=spaces; t++) System.out.print("\t");
                     System.out.print(childList.get(i) +". " +articleList.get(childList.get(i)));
                     System.out.println();
                     visitedArray[childList.get(i) - 1] = true;
