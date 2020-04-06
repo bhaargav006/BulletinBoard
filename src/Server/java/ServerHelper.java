@@ -170,6 +170,7 @@ public class ServerHelper {
 
             case "Reply":
                 sendWriteToCoordinator(coordinator, message, dependencyList);
+
                 break;
 
             case "getLocalMap":
@@ -202,11 +203,15 @@ public class ServerHelper {
 
     private static void sendWriteToCoordinator(SocketConnection coordinator, String[] message, HashMap<Integer, ArrayList<Integer>> dependencyList)  {
 
+        int flag = 0;
+        if(message[0].equals("Reply")) {
+            flag =1;
+        }
         StringBuilder sb = getStringBuilder(message);
         System.out.println(sb.toString());
         try {
             ObjectOutputStream objectOutputStream = coordinator.getOos();//new ObjectOutputStream(coordinator.getOutputStream());
-            objectOutputStream.writeObject(1);
+            objectOutputStream.writeObject(flag);
             objectOutputStream.writeObject(dependencyList);
             objectOutputStream.writeObject(sb.toString());
             System.out.println("Sent to Coordinator");
@@ -276,9 +281,10 @@ public class ServerHelper {
             if(type.equals(Consistency.SEQUENTIAL)) {
               //  output = new ObjectOutputStream(client.getOutputStream());
                 output = cloos;
-                output.writeObject(articleList);
-                output.writeObject(dependencyList);
-                System.out.println("Sent to Client: Article: " + articleList.get(0) + " Dependency: " + dependencyList.get(1));
+                output.writeObject(Server.articleList);
+                output.writeObject(Server.dependencyList);
+                output.reset();
+                System.out.println("Sent to Client: Article: " + Server.articleList + " Dependency: " + dependencyList);
             }
             else if(type.equals(Consistency.QUORUM)){
                 ServerHelper.sendReadToCoordinator(coordinator,message);
@@ -315,6 +321,9 @@ public class ServerHelper {
         try {
             objectInputStream = socket.getOis();
             String readMesage = (String) objectInputStream.readObject();
+            String dependency = (String) objectInputStream.readObject();
+            System.out.println("dpen list " + dependency);
+            HashMap<Integer, ArrayList<Integer>> dependencyList = convertToMap(dependency);
             System.out.println("Message from Coordiantor" + readMesage);
             String [] rec = readMesage.split(" ");
             String msg = "";
@@ -322,9 +331,10 @@ public class ServerHelper {
                 msg += rec[i];
             }
             Server.articleList.put(Integer.parseInt(rec[0]), msg);
-            HashMap<Integer, ArrayList<Integer>> dependencyList = (HashMap) objectInputStream.readObject();
             System.out.println("Message from coordinator::: "+dependencyList);
-            Server.dependencyList.putAll(dependencyList);
+            if(dependencyList!=null)
+                Server.dependencyList.putAll(dependencyList);
+            System.out.println("Updated Dependency List "+Server.dependencyList);
         } catch (IOException e) {
             System.out.println("Can't read from coordinator");
         } catch (ClassNotFoundException e) {
@@ -365,6 +375,24 @@ public class ServerHelper {
             System.out.println("Couldn't convert the message received from coordinator");
         }
         return Consistency.ERROR;
+    }
+    public static HashMap<Integer, ArrayList<Integer>>  convertToMap(String dep) {
+        HashMap<Integer, ArrayList<Integer>> ans = new HashMap<>();
+        if(dep.length() ==0) return null;
+        String [] entries = dep.split(";");
+        for(String e: entries) {
+            if(e.length() == 0) continue;
+            ArrayList<Integer> temp = new ArrayList<>();
+            String [] kv = e.split("=");
+            String [] values = kv[1].split(",");
+            int key = Integer.parseInt(kv[0]);
+            for(String v: values){
+                if(v.length() == 0) continue;
+                temp.add(Integer.parseInt(v));
+            }
+            ans.put(key,temp);
+        }
+        return ans;
     }
 
 

@@ -7,13 +7,8 @@ import java.util.HashMap;
 
 public class ClientHelper {
     public static void sendMessageToServer(SocketConnection socket, String[] message, int flag) throws IOException {
-       // ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
         socket.getOos().writeObject(message);
         System.out.println("Sent to Socket");
-        if(flag==0) {
-            System.out.println("socket not closed");
-        }
-           // output.close();
         if(flag==1)
             receiveMessageFromServer(socket, 0);
         if(flag==2)
@@ -37,7 +32,7 @@ public class ClientHelper {
             else if(flag==1){
                 articleList = (HashMap) in.readObject();
                 dependencyList = (HashMap) in.readObject();
-                System.out.println("Got articleList and dependencyList from the server" + articleList.size());
+                System.out.println("Got articleList and dependencyList from the server" + articleList.size() + dependencyList.size());
                 readArticles(articleList, dependencyList);
             }
 
@@ -77,6 +72,7 @@ public class ClientHelper {
                     System.out.print("\t " + childList.get(i) +". " +articleList.get(childList.get(i)));
                     System.out.println();
                     visitedArray[childList.get(i) - 1] = true;
+                   // createString(articleList,dependencyList,visitedArray,childList.get(i));
                 }
             }
             createString(articleList, dependencyList,visitedArray, index + 1);

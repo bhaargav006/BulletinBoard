@@ -1,3 +1,4 @@
+import javax.xml.bind.SchemaOutputResolver;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -17,6 +18,7 @@ public class Client {
         InetAddress host = InetAddress.getLocalHost();
         try {
             SocketConnection socketConnection = new SocketConnection(8000);
+            SocketConnection socketConnection1 = new SocketConnection(8000);
             Boolean exit = true;
             while(exit){
                 System.out.println("[P] Post \n[R] Read \n[C] Choose \n[Rep] Reply \n");
@@ -36,7 +38,11 @@ public class Client {
                         message = "Choose 0";
                         break;
                     case "Rep":
-                        message = "Reply dnfdfn";
+                        System.out.println("Enter Article Id");
+                        String id = in.nextLine();
+                        System.out.println("Enter Article");
+                        String msg = in.nextLine();
+                        message = "Reply " +id +" " +msg;
                         break;
                     case "Exit":
                        // socket.close();
