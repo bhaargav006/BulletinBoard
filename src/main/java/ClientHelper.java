@@ -6,26 +6,30 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ClientHelper {
-    public static void sendMessageToServer(Socket socket, String[] message, int flag) throws IOException {
-        ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-        output.writeObject(message);
+    public static void sendMessageToServer(SocketConnection socket, String[] message, int flag) throws IOException {
+       // ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+        socket.getOos().writeObject(message);
         System.out.println("Sent to Socket");
-        if(flag==0)
-            output.close();
+        if(flag==0) {
+            System.out.println("socket not closed");
+        }
+           // output.close();
         if(flag==1)
             receiveMessageFromServer(socket, 0);
         if(flag==2)
             receiveMessageFromServer(socket, 1);
     }
 
-    public static void receiveMessageFromServer(Socket socket, int flag) {
+    public static void receiveMessageFromServer(SocketConnection socket, int flag) {
 
         HashMap<Integer, String> articleList = null;
         HashMap<Integer, ArrayList<Integer>> dependencyList = null;
         String choose = null;
         try {
             System.out.println("I'm here too");
-            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+            //ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+            ObjectInputStream in = socket.getOis();
+            System.out.println("falg" + flag);
             if(flag==0){
                 choose= (String) in.readObject();
                 System.out.println(choose);
@@ -33,11 +37,11 @@ public class ClientHelper {
             else if(flag==1){
                 articleList = (HashMap) in.readObject();
                 dependencyList = (HashMap) in.readObject();
-                System.out.println("Got articleList and dependencyList from the server");
+                System.out.println("Got articleList and dependencyList from the server" + articleList.size());
                 readArticles(articleList, dependencyList);
             }
 
-            in.close();
+            //in.close();
 
         } catch (IOException e1) {
             System.out.println("Error while receiving message from Server");
@@ -79,12 +83,12 @@ public class ClientHelper {
         }
     }
 
-    public static void processMessage(Socket socket, String message) throws IOException {
+    public static void processMessage(SocketConnection socket, String message ) throws IOException {
         String[] messageList = message.split(" ");
         switch (messageList[0]){
             case "Read": sendMessageToServer(socket, messageList, 2);break;
             case "Choose": sendMessageToServer(socket, messageList, 1);break;
-            case "Post":
+            case "Post": //sendMessageToServer(socket,messageList,0);
             case "Reply":
                 sendMessageToServer(socket, messageList, 0);break;
             case "exit":
