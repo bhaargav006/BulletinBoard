@@ -28,9 +28,7 @@ public class Server {
             new Thread(syncthread).start();
         }
         try {
-            InetAddress host = InetAddress.getLocalHost();
             coordinatorSocket = new SocketConnection(8001);
-
             server = new ServerSocket(port);
             type = ServerHelper.getConsistencyType(coordinatorSocket);
             System.out.println(type.toString());

@@ -43,18 +43,25 @@ public class CoordinatorHelper {
         String[] messageReceived = null;
         int latestID;
         String result = "";
-        ArrayList<Integer> childList = null;
+        ArrayList<Integer> childList = new ArrayList<>();
         messageReceived = message.split("-");
-        if (messageReceived.length >= 1) {
+        System.out.println(message);
+        if (messageReceived.length < 2) {
             latestID = getLatestID(server, messageReceived[0],id);
             result = latestID + " " + messageReceived[0];
         } else {
             latestID = getLatestID(server, messageReceived[0], id);
-            result = latestID + " " + messageReceived[0] + " " + messageReceived[1];
-            childList = dependencyList.get(messageReceived[0]);
-            childList.add(latestID);
+            result = latestID + " " + messageReceived[1];
+            childList = dependencyList.get(Integer.parseInt(messageReceived[0]));
+            if(childList != null)
+                childList.add(latestID);
+            else {
+                childList = new ArrayList<>();
+                childList.add(latestID);
+            }
             dependencyList.put(Integer.parseInt(messageReceived[0]), childList);
         }
+        System.out.println(dependencyList);
         Coordinator.ID = latestID;
         System.out.println("The latest ID is: " + latestID);
         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<String, HashMap<Integer, ArrayList<Integer>>>(result, dependencyList);
@@ -67,17 +74,33 @@ public class CoordinatorHelper {
     }
 
     public static void broadcastMessageToServers(String message, HashMap<Integer, ArrayList<Integer>> dependencyList) {
+        System.out.println(dependencyList);
+        String dl = convertToString(dependencyList);
         try {
             for (SocketConnection server : Coordinator.serverSockets) {
                 ObjectOutputStream objectOutputStream = server.getOos();
                 objectOutputStream.writeObject(message);
-                objectOutputStream.writeObject(dependencyList);
+                objectOutputStream.writeObject(dl);
                 System.out.println("Sent to Socket");
             }
         } catch (IOException e) {
             System.out.println("Problem broadcasting to servers from coordinator");
         }
 
+    }
+
+    public static String convertToString(HashMap<Integer, ArrayList<Integer>> a) {
+        String ans = "";
+        for(Map.Entry e: a.entrySet()) {
+            ans += String.valueOf(e.getKey());
+            ans += "=";
+            ArrayList<Integer> res = (ArrayList<Integer>) e.getValue();
+            for(int r: res) {
+                ans += String.valueOf(r +",");
+            }
+            ans += ";";
+        }
+        return ans;
     }
 
     public static HashMap<String, Integer> getReadAndWriteServers() throws IOException {
