@@ -24,8 +24,9 @@ public class ServerResponder extends Thread {
                 case SEQUENTIAL: {
                     CoordinatorHelper.sendConsistencyTypeToServers(server, Consistency.SEQUENTIAL.toString());
                     while (!type.equals(Consistency.ERROR)) {
-                        Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.ID);
-                        CoordinatorHelper.broadcastMessageToServers(pair.getKey(), pair.getValue());
+                        Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
+                        Pair<String, HashMap<Integer, ArrayList<Integer>>> newPair = CoordinatorHelper.processMessageReceivedFromServer(server, type, pair.getKey(), pair.getValue(), Coordinator.ID);
+                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue());
                     }
                     server.close();
                     System.out.println("Socket Closed");
@@ -46,16 +47,16 @@ public class ServerResponder extends Thread {
                     ArrayList<Socket> readServers = CoordinatorHelper.getReadServers(readWriteNumbers.get("Read"));
                     ArrayList<Socket> writeServers = CoordinatorHelper.getWriteServers(readWriteNumbers.get("Write"));
 
-                    Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.ID);
-
+                    Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
+                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> quorumPair = CoordinatorHelper.getArticlesFromCoordinator(server, readServers);
+                    CoordinatorHelper.sendArticlesToServers(server, quorumPair);
 
                     break;
                 case READ_YOUR_WRITE:
-                    CoordinatorHelper.sendConsistencyTypeToServers(server, Consistency.SEQUENTIAL.toString());
-                    Pair<String, HashMap<Integer, ArrayList<Integer>>> rywPair = CoordinatorHelper.receiveMessageFromServer(server, Coordinator.ID);
-                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> globalPair = CoordinatorHelper.getArticlesFromCoordinator(server);
-                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(server.getOutputStream());
-                    objectOutputStream.writeObject(globalPair);
+                    CoordinatorHelper.sendConsistencyTypeToServers(server, Consistency.READ_YOUR_WRITE.toString());
+                    Pair<String, HashMap<Integer, ArrayList<Integer>>> rywPair = CoordinatorHelper.receiveMessageFromServer(server);
+                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> globalPair = CoordinatorHelper.getArticlesFromCoordinator(server, Coordinator.serverSockets);
+                    CoordinatorHelper.sendArticlesToServers(server, globalPair);
                     break;
                 case ERROR:
                     break;
