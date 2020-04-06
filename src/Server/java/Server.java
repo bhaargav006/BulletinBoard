@@ -1,6 +1,4 @@
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -26,7 +24,10 @@ public class Server {
             server = new ServerSocket(port);
             type = ServerHelper.getConsistencyType(coordinatorSocket);
             System.out.println(type.toString());
-//            Thread syncthread = null;
+            if(type.equals(Consistency.QUORUM) || type.equals(Consistency.READ_YOUR_WRITE)) {
+                coordinatorSocket.getOos().writeObject(1);
+            }
+            Thread syncthread = null;
 //            if(Consistency.QUORUM == type) {
 //                syncthread = new QuorumSyncThread();
 //                new Thread(syncthread).start();
@@ -36,13 +37,12 @@ public class Server {
                 Socket client = null;
                 try {
                     client = server.accept();
-                    ObjectOutputStream clOos = new ObjectOutputStream(client.getOutputStream());
-                    ObjectInputStream clOis = new ObjectInputStream(client.getInputStream());
-                    Thread clientResponder = new ClientResponder(client,coordinatorSocket, type, clOis, clOos);
+                    SocketConnection sc = new SocketConnection(client);
+                    Thread clientResponder = new ClientResponder(sc,coordinatorSocket, type);
                     clientResponder.start();
                 } catch (IOException e) {
                     client.close();
-                    //((QuorumSyncThread) syncthread).stopSync();
+//                    ((QuorumSyncThread) syncthread).stopSync();
                     System.out.println("Error in the server sockets while accepting clients");
                 }
             }

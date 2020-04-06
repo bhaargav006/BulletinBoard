@@ -4,6 +4,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Coordinator {
 
@@ -11,7 +12,7 @@ public class Coordinator {
     static volatile HashMap<String, String> serverMessageQueue;
     static volatile int ID;
     static volatile ArrayList<SocketConnection> serverSockets;
-    static volatile HashMap<String, Integer> readWriteNumbers;
+    static volatile ConcurrentHashMap<String, Integer> readWriteNumbers;
     Consistency type;
 
     public Coordinator(int port) {
@@ -51,7 +52,8 @@ public class Coordinator {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Couldn't create connection with server");
+            System.out.println("Couldn't create connection with server" );
+//            e.printStackTrace();
         }
 
     }

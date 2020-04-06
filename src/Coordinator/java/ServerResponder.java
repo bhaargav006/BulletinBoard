@@ -39,6 +39,11 @@ public class ServerResponder extends Thread {
                 }
 
                 case QUORUM: {
+                    if((int)server.getOis().readObject()==0){
+                        server.getOos().writeObject(Coordinator.ID);
+                        server.getOos().reset();
+                        server.close();
+                    }
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.QUORUM.toString(), oos);
                     while (!type.equals(Consistency.ERROR)) {
 
@@ -63,10 +68,18 @@ public class ServerResponder extends Thread {
                 }
 
                 case READ_YOUR_WRITE: {
+                    if((int)server.getOis().readObject()==0){
+                        server.getOos().writeObject(Coordinator.ID);
+                        server.getOos().reset();
+                        server.close();
+                    }
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.READ_YOUR_WRITE.toString(), oos);
-                    Pair<String, HashMap<Integer, ArrayList<Integer>>> rywPair = CoordinatorHelper.receiveMessageFromServer(server);
-                    Pair<HashMap<Integer, String>, HashMap<Integer, ArrayList<Integer>>> globalPair = CoordinatorHelper.getArticlesFromCoordinator(server.getSocket(), Coordinator.serverSockets);
-                    CoordinatorHelper.sendArticlesToServers(server, globalPair);
+                    while (!type.equals(Consistency.ERROR)) {
+                        Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
+                        Pair<String, HashMap<Integer, ArrayList<Integer>>> newPair = CoordinatorHelper.processMessageReceivedFromServer(server.getSocket(),pair.getKey(), pair.getValue(), Coordinator.ID);
+                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue(), Coordinator.serverSockets);
+                    }
+                    server.close();
                     break;
                 }
 

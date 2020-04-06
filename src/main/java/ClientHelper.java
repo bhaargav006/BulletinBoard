@@ -7,6 +7,12 @@ public class ClientHelper {
     public static void sendMessageToServer(SocketConnection socket, String[] message, int flag) throws IOException {
         socket.getOos().writeObject(message);
         System.out.println("Sent to Server");
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            System.out.println("Thread is not waking up");
+        }
         //Choose
         if(flag==1)
             receiveMessageFromServer(socket, 0);

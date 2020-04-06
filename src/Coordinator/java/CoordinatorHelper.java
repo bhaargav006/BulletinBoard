@@ -3,20 +3,21 @@ import javafx.util.Pair;
 import java.io.*;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CoordinatorHelper {
 
     public static ArrayList<String> getServerIPAndPort() throws IOException {
         ArrayList<String> listOfServers = new ArrayList<>();
-        File file = new File("src/serverList.properties");
+        File file = new File("serverList.properties");
         FileInputStream fileInputStream = new FileInputStream(file);
         Properties prop = new Properties();
         prop.load(fileInputStream);
         Enumeration enumeration = prop.keys();
         listOfServers.add(prop.getProperty("server1").split(":")[1]);
-//        listOfServers.add(prop.getProperty("server2").split(":")[1]);
-//        listOfServers.add(prop.getProperty("server3").split(":")[1]);
-//        listOfServers.add(prop.getProperty("server4").split(":")[1]);
+        listOfServers.add(prop.getProperty("server2").split(":")[1]);
+        listOfServers.add(prop.getProperty("server3").split(":")[1]);
+        listOfServers.add(prop.getProperty("server4").split(":")[1]);
 
         return listOfServers;
     }
@@ -27,7 +28,7 @@ public class CoordinatorHelper {
         try {
             System.out.println("Server at: " + socket.getSocket().getLocalPort());
             ObjectInputStream objectInputStream = socket.getOis();//new ObjectInputStream(socket.getInputStream());
-            int requestFlag = (Integer) objectInputStream.readObject();
+
 
             /**
              * Read request in the case of quorum
@@ -87,9 +88,13 @@ public class CoordinatorHelper {
         String dl = convertToString(dependencyList);
         try {
             for (SocketConnection server : writeServers) {
-                ObjectOutputStream objectOutputStream = server.getOos();
+                SocketConnection temp = new SocketConnection(8000);
+                ObjectOutputStream objectOutputStream = temp.getOos();
+                String[] tempMsg= {"Update"};
+                objectOutputStream.writeObject(tempMsg);
                 objectOutputStream.writeObject(message);
                 objectOutputStream.writeObject(dl);
+                objectOutputStream.reset();
                 System.out.println("Sent to Socket");
             }
         } catch (IOException e) {
@@ -112,9 +117,9 @@ public class CoordinatorHelper {
         return ans;
     }
 
-    public static HashMap<String, Integer> getReadAndWriteServers() throws IOException {
-        HashMap<String, Integer> readWriteServers = new HashMap<String, Integer>();
-        File file = new File("src/serverList.properties");
+    public static ConcurrentHashMap<String, Integer> getReadAndWriteServers() throws IOException {
+        ConcurrentHashMap<String, Integer> readWriteServers = new ConcurrentHashMap<String, Integer>();
+        File file = new File("serverList.properties");
         FileInputStream fileInputStream = new FileInputStream(file);
         Properties prop = new Properties();
         prop.load(fileInputStream);
