@@ -158,9 +158,9 @@ public class ServerHelper {
         switch (message[0]) {
             case "Read":
                 if (type.equals(Consistency.READ_YOUR_WRITE)) {
-                    CoordinatorHelper.getArticlesFromCoordinator(coordinator);
+                    CoordinatorHelper.getArticlesFromCoordinator(coordinator, Coordinator.serverSockets);
                 }
-                else sendArticlesToClient(client, coordinator, type, articleList,dependencyList, message);
+                else sendArticlesToClient(client, coordinator, type, articleList, dependencyList, message);
                 break;
 
             case "Choose":
@@ -222,13 +222,16 @@ public class ServerHelper {
     //TODO change local copy of server from coordinator
 
     private static void sendReadToCoordinator(Socket coordinator, String[] message)  {
-
+        int flag = 0;
+        if(message[0] == "Read") {
+            flag = 1;
+        }
         StringBuilder sb = getStringBuilder(message);
         System.out.println(sb.toString());
         try {
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(coordinator.getOutputStream());
-            objectOutputStream.writeObject(0);
-            //TODO add read/choose flag here itself
+
+            objectOutputStream.writeObject(flag);
             objectOutputStream.writeObject(message);
             System.out.println("Sent to Coordinator");
             receiveMessagefromCoordinator(coordinator, message);
@@ -312,11 +315,14 @@ public class ServerHelper {
             objectInputStream = new ObjectInputStream(socket.getInputStream());
             String readMessage = (String) objectInputStream.readObject();
             HashMap<Integer, ArrayList<Integer>> dependencyList = (HashMap) objectInputStream.readObject();
+
+            Server.dependencyList.putAll(dependencyList);
         } catch (IOException e) {
             System.out.println("Can't read from coordinator");
         } catch (ClassNotFoundException e) {
             System.out.println("Couldn't convert the message received from coordinator");
         }
+
 
         //TODO is it not getting updated. LEt us do a end to end testing tonight.
         //How am I suppose to update the dependency list and articleList?

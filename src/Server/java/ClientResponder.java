@@ -26,6 +26,7 @@ public class ClientResponder extends Thread {
                     String[] message = ServerHelper.receiveMessageFromClient(client);
                     try {
                         ServerHelper.processMessageFromClient(client, coordinator, type, message,Server.articleList,Server.dependencyList);
+                        ServerHelper.receiveMapsfromCoordinator(coordinator);
                     } catch (IOException | ClassNotFoundException e1) {
                         e1.printStackTrace();
                     }
@@ -34,10 +35,11 @@ public class ClientResponder extends Thread {
                     String[] clientMessage = ServerHelper.receiveMessageFromClient(client);
                     try {
                         ServerHelper.processMessageFromClient(client, coordinator, type, clientMessage,Server.articleList,Server.dependencyList);
+                        ServerHelper.receiveMapsfromCoordinator(coordinator);
                     } catch (IOException | ClassNotFoundException e1) {
                         e1.printStackTrace();
                     }
-                    ServerHelper.receiveMapsfromCoordinator(coordinator);
+
             }
 
         } catch (ClassNotFoundException e) {
