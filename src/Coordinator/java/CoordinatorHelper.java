@@ -27,15 +27,23 @@ public class CoordinatorHelper {
         try {
             System.out.println("Server at: " + socket.getSocket().getLocalPort());
             ObjectInputStream objectInputStream = socket.getOis();//new ObjectInputStream(socket.getInputStream());
-            int isWrite = (Integer) objectInputStream.readObject();
+            int requestFlag = (Integer) objectInputStream.readObject();
+
+            /**
+             * Read request in the case of quorum
+             */
+            if(requestFlag<2){
+                message = (String) objectInputStream.readObject();
+                return new Pair<>(message, null);
+            }
+
             dependencyList = (HashMap) objectInputStream.readObject();
             message = (String) objectInputStream.readObject();
 
         } catch (IOException | ClassNotFoundException e1){
             System.out.println("Couldn't receive message from server");
         }
-        Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<String, HashMap<Integer, ArrayList<Integer>>>(message, dependencyList);
-        return pair;
+        return new Pair<>(message, dependencyList);
     }
 
     public static Pair<String, HashMap<Integer, ArrayList<Integer>>> processMessageReceivedFromServer(Socket server, Consistency type, String message, HashMap<Integer, ArrayList<Integer>> dependencyList, int id) {
@@ -145,10 +153,10 @@ public class CoordinatorHelper {
                 return Consistency.READ_YOUR_WRITE;
             case "Exit":
                 System.out.println("Bye Bye");
-                return Consistency.ERROR;
+                return Consistency.EXIT;
             default:
                 System.out.println("Invalid Input");
-                return Consistency.EXIT;
+                return Consistency.ERROR;
         }
     }
 

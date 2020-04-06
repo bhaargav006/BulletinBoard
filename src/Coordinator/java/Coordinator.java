@@ -1,12 +1,6 @@
-import javafx.util.Pair;
-
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -41,15 +35,12 @@ public class Coordinator {
         try {
             coordinator = new ServerSocket(port);
             while(true){
-                Socket server = null;
+                Socket server;
                 try {
                     server = coordinator.accept();
-//                    ObjectOutputStream oos = new ObjectOutputStream(server.getOutputStream());
-//                    ObjectInputStream ois = new ObjectInputStream(server.getInputStream());
                     SocketConnection sc = new SocketConnection(server);
                     Thread serverResponder = new ServerResponder(sc,type);
                     serverResponder.start();
-
 
                 } catch (IOException e) {
                     System.out.println("Error in the Coordinator sockets while accepting server");

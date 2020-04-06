@@ -159,11 +159,11 @@ public class ServerHelper {
 
                     CoordinatorHelper.getArticlesFromCoordinator(coordinator.getSocket(), Coordinator.serverSockets);
                 }
-                else sendArticlesToClient(client, coordinator, type, articleList, dependencyList, message, clientOis, clientOos);
+                else sendArticlesToClient(type, articleList, dependencyList, clientOos);
                 break;
 
             case "Choose":
-            //    sendChosenArticle(client, coordinator, message[1], articleList);
+                sendChosenArticle(clientOos, type, message[1], articleList);
                 break;
 
             case "Post":
@@ -190,15 +190,24 @@ public class ServerHelper {
 
 
 
-    private static void sendChosenArticle(Socket client, Socket coordinator, String ID, HashMap<Integer, String> articleList) {
-        //TODO send a redRequest to coordinator in the case of Quorum
+    private static void sendChosenArticle(ObjectOutputStream client, Consistency type, String ID, HashMap<Integer, String> articleList) {
+
         articleList.put(0,"Dummy article");
         Integer articleID = Integer.parseInt(ID);
         System.out.println("Article ID is " + articleID);
-        String article = articleList.get(articleID);
-        if (article == null || article == "")
-            article = "Invalid article ID. There is no such article";
-        sendMessageToClient(client, article);
+
+        if(type.equals(Consistency.QUORUM)) {
+            try {
+                ServerHelper.synch();
+                String article = articleList.get(articleID);
+                if (article == null || article == "")
+                    article = "Invalid article ID. There is no such article";
+                sendMessageToClient(client, article);
+            } catch (IOException | ClassNotFoundException e) {
+                System.out.println("Error while getting updated list from the servers");
+            }
+        }
+
     }
 
     private static void sendWriteToCoordinator(SocketConnection coordinator, String[] message, HashMap<Integer, ArrayList<Integer>> dependencyList)  {
@@ -211,6 +220,7 @@ public class ServerHelper {
         System.out.println(sb.toString());
         try {
             ObjectOutputStream objectOutputStream = coordinator.getOos();//new ObjectOutputStream(coordinator.getOutputStream());
+
             objectOutputStream.writeObject(flag);
             objectOutputStream.writeObject(dependencyList);
             objectOutputStream.writeObject(sb.toString());
@@ -267,38 +277,39 @@ public class ServerHelper {
         return sb;
     }
 
-    private static void sendArticlesToClient(Socket client, SocketConnection coordinator, Consistency type, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList, String[] message, ObjectInputStream clois, ObjectOutputStream cloos) {
+    private static void sendArticlesToClient(Consistency type, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList,ObjectOutputStream cloos) {
         //Send the whole object to the client
         ObjectOutputStream output = null;
         try {
             /*
                 The following dummy entries has to be deleted before submitting
+
+                articleList.put(0,"Dummy article");
+                ArrayList<Integer> dummyList = new ArrayList<>();
+                dummyList.add(0);
+                dependencyList.put(1, dummyList);
              */
-//            articleList.put(0,"Dummy article");
-//            ArrayList<Integer> dummyList = new ArrayList<>();
-//            dummyList.add(0);
-//            dependencyList.put(1, dummyList);
-            if(type.equals(Consistency.SEQUENTIAL)) {
+
+            if(type.equals(Consistency.QUORUM)) {
+                ServerHelper.synch();
+            }
               //  output = new ObjectOutputStream(client.getOutputStream());
-                output = cloos;
-                output.writeObject(Server.articleList);
-                output.writeObject(Server.dependencyList);
-                output.reset();
-                System.out.println("Sent to Client: Article: " + Server.articleList + " Dependency: " + dependencyList);
-            }
-            else if(type.equals(Consistency.QUORUM)){
-                ServerHelper.sendReadToCoordinator(coordinator,message);
-            }
-        } catch (IOException e) {
+            output = cloos;
+            output.writeObject(Server.articleList);
+            output.writeObject(Server.dependencyList);
+            output.reset();
+            System.out.println("Sent to Client: Article: " + Server.articleList + " Dependency: " + dependencyList);
+
+        } catch (IOException | ClassNotFoundException e) {
             System.out.println("Can't send message back to the client");
         }
     }
 
-    public static void sendMessageToClient (Socket socket, String message){
+    public static void sendMessageToClient (ObjectOutputStream socket, String message){
         //Send the string message to the client
         ObjectOutputStream output = null;
         try {
-            output = new ObjectOutputStream(socket.getOutputStream());
+            output = new ObjectOutputStream(socket);
             output.writeObject(message);
             System.out.println("Sent the article to Client");
 
@@ -321,9 +332,10 @@ public class ServerHelper {
         try {
             objectInputStream = socket.getOis();
             String readMesage = (String) objectInputStream.readObject();
+
             String dependency = (String) objectInputStream.readObject();
-            System.out.println("dpen list " + dependency);
             HashMap<Integer, ArrayList<Integer>> dependencyList = convertToMap(dependency);
+
             System.out.println("Message from Coordiantor" + readMesage);
             String [] rec = readMesage.split(" ");
             String msg = "";
@@ -331,6 +343,7 @@ public class ServerHelper {
                 msg += rec[i];
             }
             Server.articleList.put(Integer.parseInt(rec[0]), msg);
+
             System.out.println("Message from coordinator::: "+dependencyList);
             if(dependencyList!=null)
                 Server.dependencyList.putAll(dependencyList);
