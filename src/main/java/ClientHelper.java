@@ -49,12 +49,12 @@ public class ClientHelper {
     public static void readArticles(HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) {
         int i = 1;
         boolean[] visitedArray = new boolean[articleList.size()];
-        createString(articleList, dependencyList,visitedArray, i);
+        createString(articleList, dependencyList,visitedArray, i,0);
         //Do a DFS
     }
 
 
-    private static void createString(HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList, boolean[] visitedArray, int index) {
+    private static void createString(HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList, boolean[] visitedArray, int index, int spaces) {
         if(index > articleList.size()){
             return;
         }
@@ -64,18 +64,22 @@ public class ClientHelper {
         ArrayList<Integer> childList = dependencyList.get(index);
         visitedArray[index - 1] = true;
         if(childList == null || childList.size() == 0){
-            createString(articleList, dependencyList,visitedArray, index + 1);
+            createString(articleList, dependencyList,visitedArray, index + 1, spaces);
         }
         else{
+           // System.out.print("\t");
             for(int i = 0; i < childList.size(); i++){
                 if(visitedArray[childList.get(i) - 1] == false){
-                    System.out.print("\t " + childList.get(i) +". " +articleList.get(childList.get(i)));
+                    for(int t = 0; t <=git  spaces; t++) System.out.print("\t");
+                    System.out.print(childList.get(i) +". " +articleList.get(childList.get(i)));
                     System.out.println();
                     visitedArray[childList.get(i) - 1] = true;
-                   // createString(articleList,dependencyList,visitedArray,childList.get(i));
+                    if(dependencyList.get(childList.get(i)) == null) continue;
+                    createString(articleList,dependencyList,visitedArray,childList.get(i), spaces+1);
+
                 }
             }
-            createString(articleList, dependencyList,visitedArray, index + 1);
+            createString(articleList, dependencyList,visitedArray, index + 1, spaces);
         }
     }
 
