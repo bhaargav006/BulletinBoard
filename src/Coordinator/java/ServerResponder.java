@@ -15,7 +15,6 @@ public class ServerResponder extends Thread {
     public ServerResponder(SocketConnection server, Consistency type){
         this.server = server;
         this.type = type;
-        Coordinator.serverSockets.add(server);
         this.oos = server.getOos();
         this.ois = server.getOis();
     }
@@ -27,8 +26,9 @@ public class ServerResponder extends Thread {
             switch (type) {
                 case SEQUENTIAL: {
                     if((int)server.getOis().readObject() !=0) {
-
+                        break;
                     }
+                    Coordinator.serverSockets.add(server);
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.SEQUENTIAL.toString(), oos);
                     while (!type.equals(Consistency.ERROR)) {
 
@@ -46,7 +46,9 @@ public class ServerResponder extends Thread {
                         server.getOos().writeObject(Coordinator.ID);
                         server.getOos().reset();
                         server.close();
+                        break;
                     }
+                    Coordinator.serverSockets.add(server);
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.QUORUM.toString(), oos);
                     while (!type.equals(Consistency.ERROR)) {
 
@@ -74,7 +76,9 @@ public class ServerResponder extends Thread {
                         server.getOos().writeObject(Coordinator.ID);
                         server.getOos().reset();
                         server.close();
+                        break;
                     }
+                    Coordinator.serverSockets.add(server);
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.READ_YOUR_WRITE.toString(), oos);
                     while (!type.equals(Consistency.ERROR)) {
                         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);

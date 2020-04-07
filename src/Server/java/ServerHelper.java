@@ -169,7 +169,7 @@ public class ServerHelper {
         Server.dependencyList.put(articleId, arr);
     }
 
-    public static void processMessageFromClient(SocketConnection client, SocketConnection coordinator, Consistency type, String[] message, HashMap<Integer,String> articleList, HashMap<Integer,ArrayList<Integer>> dependencyList, ObjectOutputStream clientOos, ObjectInputStream clientOis) throws IOException, ClassNotFoundException {
+    public static void processMessageFromClient(SocketConnection client, SocketConnection coordinator, Consistency type, String[] message, HashMap<Integer,String> articleList, HashMap<Integer,ArrayList<Integer>> dependencyList, ObjectOutputStream clientOos, ObjectInputStream clientOis)  {
         System.out.println("Client's request is " + message[0]);
         switch (message[0]) {
             case "Read":

@@ -44,7 +44,7 @@ public class Client {
                     case "Exit":
                         socketConnection.close();
                         exit = false;
-                        break;
+                        System.exit(0);
                     default:
                         System.out.println("Not a valid input!");
                 }
