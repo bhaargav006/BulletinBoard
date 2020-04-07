@@ -3,12 +3,13 @@ import javafx.util.Pair;
 import java.io.*;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CoordinatorHelper {
 
     public static ArrayList<String> getServerIPAndPort() throws IOException {
         ArrayList<String> listOfServers = new ArrayList<>();
-        File file = new File("src/serverList.properties");
+        File file = new File("serverList.properties");
         FileInputStream fileInputStream = new FileInputStream(file);
         Properties prop = new Properties();
         prop.load(fileInputStream);
@@ -27,25 +28,34 @@ public class CoordinatorHelper {
         try {
             System.out.println("Server at: " + socket.getSocket().getLocalPort());
             ObjectInputStream objectInputStream = socket.getOis();//new ObjectInputStream(socket.getInputStream());
-            int isWrite = (Integer) objectInputStream.readObject();
+
+
+            /**
+             * Read request in the case of quorum
+             */
+//            if(requestFlag<2){
+//                message = (String) objectInputStream.readObject();
+//                return new Pair<>(message, null);
+//            }
+
             dependencyList = (HashMap) objectInputStream.readObject();
             message = (String) objectInputStream.readObject();
+//            System.out.println("Ffrom server:" + message + " " + dependencyList);
 
         } catch (IOException | ClassNotFoundException e1){
             System.out.println("Couldn't receive message from server");
         }
-        Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<String, HashMap<Integer, ArrayList<Integer>>>(message, dependencyList);
-        return pair;
+        return new Pair<>(message, dependencyList);
     }
 
-    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> processMessageReceivedFromServer(Socket server, Consistency type, String message, HashMap<Integer, ArrayList<Integer>> dependencyList, int id) {
+    public static Pair<String, HashMap<Integer, ArrayList<Integer>>> processMessageReceivedFromServer(Socket server, String message, HashMap<Integer, ArrayList<Integer>> dependencyList, int id) {
         // Gets the latest ID depending on whether it is post or reply.
         String[] messageReceived = null;
         int latestID;
         String result = "";
         ArrayList<Integer> childList = new ArrayList<>();
         messageReceived = message.split("-");
-        System.out.println(message);
+//        System.out.println(message);
         if (messageReceived.length < 2) {
             latestID = getLatestID(server, messageReceived[0],id);
             result = latestID + " " + messageReceived[0];
@@ -61,7 +71,7 @@ public class CoordinatorHelper {
             }
             dependencyList.put(Integer.parseInt(messageReceived[0]), childList);
         }
-        System.out.println(dependencyList);
+//        System.out.println(dependencyList);
         Coordinator.ID = latestID;
         System.out.println("The latest ID is: " + latestID);
         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = new Pair<String, HashMap<Integer, ArrayList<Integer>>>(result, dependencyList);
@@ -73,14 +83,18 @@ public class CoordinatorHelper {
         return latestID;
     }
 
-    public static void broadcastMessageToServers(String message, HashMap<Integer, ArrayList<Integer>> dependencyList) {
+    public static void broadcastMessageToServers(String message, HashMap<Integer, ArrayList<Integer>> dependencyList, ArrayList<SocketConnection> writeServers) {
         System.out.println(dependencyList);
         String dl = convertToString(dependencyList);
         try {
-            for (SocketConnection server : Coordinator.serverSockets) {
-                ObjectOutputStream objectOutputStream = server.getOos();
+            for (SocketConnection server : writeServers) {
+                SocketConnection temp = new SocketConnection(8000);
+                ObjectOutputStream objectOutputStream = temp.getOos();
+                String[] tempMsg= {"Update"};
+                objectOutputStream.writeObject(tempMsg);
                 objectOutputStream.writeObject(message);
                 objectOutputStream.writeObject(dl);
+                objectOutputStream.reset();
                 System.out.println("Sent to Socket");
             }
         } catch (IOException e) {
@@ -103,8 +117,8 @@ public class CoordinatorHelper {
         return ans;
     }
 
-    public static HashMap<String, Integer> getReadAndWriteServers() throws IOException {
-        HashMap<String, Integer> readWriteServers = new HashMap<String, Integer>();
+    public static ConcurrentHashMap<String, Integer> getReadAndWriteServers() throws IOException {
+        ConcurrentHashMap<String, Integer> readWriteServers = new ConcurrentHashMap<String, Integer>();
         File file = new File("src/serverList.properties");
         FileInputStream fileInputStream = new FileInputStream(file);
         Properties prop = new Properties();
@@ -145,10 +159,10 @@ public class CoordinatorHelper {
                 return Consistency.READ_YOUR_WRITE;
             case "Exit":
                 System.out.println("Bye Bye");
-                return Consistency.ERROR;
+                return Consistency.EXIT;
             default:
                 System.out.println("Invalid Input");
-                return Consistency.EXIT;
+                return Consistency.ERROR;
         }
     }
 

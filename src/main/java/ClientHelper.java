@@ -1,7 +1,5 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -9,10 +7,18 @@ import java.util.Scanner;
 public class ClientHelper {
     public static void sendMessageToServer(SocketConnection socket, String[] message, int flag) throws IOException {
         socket.getOos().writeObject(message);
-        System.out.println("Sent to Socket");
+        System.out.println("Request Sent to Server");
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            System.out.println("Thread is not waking up");
+        }
+        //Choose
         if(flag==1)
             receiveMessageFromServer(socket, 0);
-        if(flag==2)
+        //Read
+        else if(flag==2)
             receiveMessageFromServer(socket, 1);
     }
 
@@ -20,24 +26,21 @@ public class ClientHelper {
 
         HashMap<Integer, String> articleList = null;
         HashMap<Integer, ArrayList<Integer>> dependencyList = null;
-        String choose = null;
+        String choose;
         try {
-            System.out.println("I'm here too");
-            //ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+
             ObjectInputStream in = socket.getOis();
-            System.out.println("falg" + flag);
             if(flag==0){
                 choose= (String) in.readObject();
-                System.out.println(choose);
+                System.out.println("The article is: " + choose);
             }
             else if(flag==1){
                 articleList = (HashMap) in.readObject();
                 dependencyList = (HashMap) in.readObject();
-                System.out.println("Got articleList and dependencyList from the server" + articleList.size() + dependencyList.size());
+                System.out.println("Succesfully received messages from Server");
                 readArticles(articleList, dependencyList);
             }
 
-            //in.close();
 
         } catch (IOException e1) {
             System.out.println("Error while receiving message from Server");
@@ -50,9 +53,8 @@ public class ClientHelper {
     public static void readArticles(HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList) {
         int i = 1;
         boolean[] visitedArray = new boolean[articleList.size()];
+        result = "";
         createString(articleList, dependencyList,visitedArray, i,0);
-        //Do a DFS
-
     }
     public static int printFive(int i) {
         String [] r = result.split("\n");
@@ -74,7 +76,7 @@ public class ClientHelper {
             return;
         }
         if(visitedArray[index - 1] == false){
-            System.out.println(index +". " +articleList.get(index));
+            ///=   System.out.println(index +". " +articleList.get(index));
             result += index+". "+ articleList.get(index)+"\n";
         }
         ArrayList<Integer> childList = dependencyList.get(index);
@@ -86,10 +88,13 @@ public class ClientHelper {
            // System.out.print("\t");
             for(int i = 0; i < childList.size(); i++){
                 if(visitedArray[childList.get(i) - 1] == false){
-                    for(int t = 0; t <=t; t++) {System.out.print("\t"); result += "\t"; }
-                    System.out.print(childList.get(i) +". " +articleList.get(childList.get(i)));
+                    for(int t = 0; t <=spaces; t++) {
+                        //System.out.print("\t");
+                        result += "\t"; }
+                  //  System.out.print(childList.get(i) +". " +articleList.get(childList.get(i)));
                     result += childList.get(i)+". "+articleList.get(childList.get(i));
-                    System.out.println();
+                 //   System.out.println();
+                    result += "\n";
                     visitedArray[childList.get(i) - 1] = true;
                     if(dependencyList.get(childList.get(i)) == null) continue;
                     createString(articleList,dependencyList,visitedArray,childList.get(i), spaces+1);

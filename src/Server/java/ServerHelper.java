@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ServerHelper {
-    public static String[] receiveMessageFromClient(Socket socket,ObjectInputStream in) {
+    public static String[] receiveMessageFromClient(ObjectInputStream in) {
         String[] ret = null;
         try {
 
@@ -32,10 +32,11 @@ public class ServerHelper {
         //get max id from coordinator
         int cport = 8001; //set port of coordinator
         Socket coordinatorPort = new Socket(chost, cport);
-        ObjectOutputStream coos = new ObjectOutputStream(coordinatorPort.getOutputStream());
-        ObjectInputStream cois = new ObjectInputStream(coordinatorPort.getInputStream());
-        coos.writeUTF("getLatestId");
-        int latestId = Integer.parseInt(cois.readUTF());
+        ObjectOutputStream coordout = new ObjectOutputStream(coordinatorPort.getOutputStream());
+        ObjectInputStream coordin = new ObjectInputStream(coordinatorPort.getInputStream());
+        coordout.writeObject(0);
+        int latestId = (int)coordin.readObject();
+        System.out.println("Latest ID is " + latestId);
 
         //get local maps from servers and create a global map with all the entries
         HashMap<Integer, String> globalArticleMap = new HashMap<>();
@@ -51,7 +52,11 @@ public class ServerHelper {
             outputStreamHashMap.put(serv, oos);
             String[] msg = {"getArticlesMap"};
             oos.writeObject(msg);
+            oos.reset();
             HashMap<Integer, String> localMap = (HashMap<Integer, String>) ois.readObject();
+            HashMap<Integer, ArrayList<Integer>> dependencyList = (HashMap<Integer, ArrayList<Integer>>) ois.readObject();
+            System.out.println("Sync: LocalMap " + localMap + " Dlist : " + dependencyList);
+
             for (int i = 1; i <= latestId; i++) {
                 if (localMap.containsKey(i)) {
                     globalArticleMap.put(i, localMap.get(i));
@@ -67,72 +72,79 @@ public class ServerHelper {
                 }
             }
 
-            String[] msgForDep = {"getDependencyMap"};
-            oos.writeObject(msgForDep);
-            HashMap<Integer, ArrayList<Integer>> dependencyList = (HashMap<Integer, ArrayList<Integer>>) ois.readObject();
-            for (Map.Entry dependency : dependencyList.entrySet()) {
-                int arId = (int) dependency.getKey();
-                if (globaldependencyMap.containsKey(arId)) {
-                    ArrayList<Integer> children = globaldependencyMap.get(arId);
-                    ArrayList<Integer> localChild = (ArrayList<Integer>) dependency.getValue();
-                    int lenOfChildren = children.size();
-                    int lenOfLocalChildren = localChild.size();
-                    ArrayList<Integer> resChild = new ArrayList<>();
-                    int a = 0;
-                    int b = 0;
-                    while (a < lenOfChildren || b < lenOfLocalChildren) {
-                        if (a >= lenOfChildren) {
-                            resChild.add(b);
-                            b++;
-                            continue;
+
+            if(dependencyList!=null) {
+
+                for (Map.Entry dependency : dependencyList.entrySet()) {
+                    int arId = (int) dependency.getKey();
+                    if (globaldependencyMap.containsKey(arId)) {
+                        ArrayList<Integer> children = globaldependencyMap.get(arId);
+                        ArrayList<Integer> localChild = (ArrayList<Integer>) dependency.getValue();
+                        int lenOfChildren = children.size();
+                        int lenOfLocalChildren = localChild.size();
+                        ArrayList<Integer> resChild = new ArrayList<>();
+                        int a = 0;
+                        int b = 0;
+                        while (a < lenOfChildren || b < lenOfLocalChildren) {
+                            if (a >= lenOfChildren) {
+                                resChild.add(b);
+                                b++;
+                                continue;
+                            }
+                            if (b >= lenOfChildren) {
+                                resChild.add(a);
+                                a++;
+                                continue;
+                            }
+                            if (children.get(a).equals(localChild.get(b))) {
+                                resChild.add(a);
+                                a++;
+                                b++;
+                            } else if (children.get(a) < localChild.get(b)) {
+                                resChild.add(a);
+                                a++;
+                            } else {
+                                resChild.add(b);
+                                b++;
+                            }
                         }
-                        if (b >= lenOfChildren) {
-                            resChild.add(a);
-                            a++;
-                            continue;
-                        }
-                        if (children.get(a).equals(localChild.get(b))) {
-                            resChild.add(a);
-                            a++;
-                            b++;
-                        } else if (children.get(a) < localChild.get(b)) {
-                            resChild.add(a);
-                            a++;
-                        } else {
-                            resChild.add(b);
-                            b++;
-                        }
+                        globaldependencyMap.put(arId, resChild);
+                    } else {
+                        globaldependencyMap.put(arId, (ArrayList<Integer>) dependency.getValue());
                     }
-                    globaldependencyMap.put(arId, resChild);
-                } else {
-                    globaldependencyMap.put(arId, (ArrayList<Integer>) dependency.getValue());
                 }
             }
         }
 
         for (String serv : serverIPAndPort) {
             List<Integer> ids = missingArticleMapForEachServer.get(serv);
-            for (int id : ids) {
-                String content = globalArticleMap.get(id);
-                ObjectOutputStream oos = outputStreamHashMap.get(serv);
-                String msg[] = {"SyncArticles", String.valueOf(id), content};
-                oos.writeObject(msg);
-            }
-        }
-        for (String serv : serverIPAndPort) {
-            ObjectOutputStream oos = outputStreamHashMap.get(serv);
-            for (Map.Entry e : globaldependencyMap.entrySet()) {
-                int arId = (int) e.getKey();
-                ArrayList<Integer> ar = (ArrayList<Integer>) e.getValue();
-                String arr = "";
-                for (int a : ar) {
-                    arr += String.valueOf(a) + " ";
+            if (ids != null){
+                for (int id : ids) {
+                    String content = globalArticleMap.get(id);
+                    ObjectOutputStream oos = outputStreamHashMap.get(serv);
+                    String msg[] = {"SyncArticles", String.valueOf(id), content};
+                    oos.writeObject(msg);
                 }
-                arr.trim();
-                String msg[] = {"SyncDependency", String.valueOf(arId), arr};
-                oos.writeObject(msg);
             }
         }
+
+        if(globaldependencyMap!=null) {
+            for (String serv : serverIPAndPort) {
+                ObjectOutputStream oos = outputStreamHashMap.get(serv);
+                for (Map.Entry e : globaldependencyMap.entrySet()) {
+                    int arId = (int) e.getKey();
+                    ArrayList<Integer> ar = (ArrayList<Integer>) e.getValue();
+                    String arr = "";
+                    for (int a : ar) {
+                        arr += String.valueOf(a) + " ";
+                    }
+                    arr.trim();
+                    String msg[] = {"SyncDependency", String.valueOf(arId), arr};
+                    oos.writeObject(msg);
+                }
+            }
+        }
+
         for (Socket s : sockets) {
             s.close();
         }
@@ -151,38 +163,41 @@ public class ServerHelper {
         Server.dependencyList.put(articleId, arr);
     }
 
-    public static void processMessageFromClient(Socket client, SocketConnection coordinator, Consistency type, String[] message, HashMap<Integer,String> articleList, HashMap<Integer,ArrayList<Integer>> dependencyList, ObjectOutputStream clientOos, ObjectInputStream clientOis) throws IOException, ClassNotFoundException {
+    public static void processMessageFromClient(SocketConnection client, SocketConnection coordinator, Consistency type, String[] message, HashMap<Integer,String> articleList, HashMap<Integer,ArrayList<Integer>> dependencyList, ObjectOutputStream clientOos, ObjectInputStream clientOis) throws IOException, ClassNotFoundException {
         System.out.println("Client's request is " + message[0]);
         switch (message[0]) {
             case "Read":
-                if (type.equals(Consistency.READ_YOUR_WRITE)) {
-
-                    CoordinatorHelper.getArticlesFromCoordinator(coordinator.getSocket(), Coordinator.serverSockets);
-                }
-                else sendArticlesToClient(client, coordinator, type, articleList, dependencyList, message, clientOis, clientOos);
+                sendArticlesToClient(type, articleList, dependencyList, clientOos, 0);
                 break;
 
             case "Choose":
-                sendChosenArticle(client, coordinator, message[1], articleList, clientOos, clientOis);
+
+                sendChosenArticle(clientOos, type, message[1], articleList);
                 break;
 
             case "Post":
 
             case "Reply":
                 sendWriteToCoordinator(coordinator, message, dependencyList);
-
                 break;
 
-            case "getLocalMap":
-                // sendArticlesToClient(socket, articleList,dependencyList);break;
+            case "getArticlesMap":
+                sendArticlesToClient(type, articleList, dependencyList, clientOos, 1);
+                break;
             case "Sync":
+                break;
             case "SyncArticles":
                 updateArticleList(Integer.parseInt(message[1]), message[2]);
-                // sendArticlesToClient(socket, articleList,dependencyList);break;
-            case "SyncDependency":
-                //update the local map
-                updateDependencyList(Integer.parseInt(message[1]), message[2]);
+                break;
 
+            case "SyncDependency": {
+                updateDependencyList(Integer.parseInt(message[1]), message[2]);
+                break;
+            }
+            case "Update": {
+                receiveMessagefromCoordinator(client);
+                break;
+            }
             default:
                 System.out.println("Invalid");
         }
@@ -190,14 +205,27 @@ public class ServerHelper {
 
 
 
-    private static void sendChosenArticle(Socket client, SocketConnection coordinator, String ID, HashMap<Integer, String> articleList, ObjectOutputStream oos, ObjectInputStream ois) {
-        //TODO send a redRequest to coordinator in the case of Quorum
+
+    private static void sendChosenArticle(ObjectOutputStream client, Consistency type, String ID, HashMap<Integer, String> articleList) {
+
         Integer articleID = Integer.parseInt(ID);
         System.out.println("Article ID is " + articleID);
+
+        if(type.equals(Consistency.QUORUM) || type.equals(Consistency.READ_YOUR_WRITE)) {
+            try {
+                ServerHelper.synch();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
         String article = articleList.get(articleID);
         if (article == null || article == "")
             article = "Invalid article ID. There is no such article";
-        sendMessageToClient(client, article, oos, ois);
+
+        sendMessageToClient(client, article);
+
     }
 
     private static void sendWriteToCoordinator(SocketConnection coordinator, String[] message, HashMap<Integer, ArrayList<Integer>> dependencyList)  {
@@ -210,11 +238,12 @@ public class ServerHelper {
         System.out.println(sb.toString());
         try {
             ObjectOutputStream objectOutputStream = coordinator.getOos();//new ObjectOutputStream(coordinator.getOutputStream());
-            objectOutputStream.writeObject(flag);
+
+//            objectOutputStream.writeObject(flag);
             objectOutputStream.writeObject(dependencyList);
             objectOutputStream.writeObject(sb.toString());
             System.out.println("Sent to Coordinator");
-            receiveMessagefromCoordinator(coordinator, message);
+            //receiveMessagefromCoordinator(coordinator);
 
         } catch (IOException e) {
             System.out.println("Error occurred while communicating with the Coordinator");
@@ -238,7 +267,7 @@ public class ServerHelper {
             objectOutputStream.writeObject(flag);
             objectOutputStream.writeObject(message);
             System.out.println("Sent to Coordinator");
-            receiveMessagefromCoordinator(coordinator, message);
+            //receiveMessagefromCoordinator(coordinator);
 
         } catch (IOException e) {
             System.out.println("Error occurred while communicating with the Coordinator");
@@ -266,40 +295,36 @@ public class ServerHelper {
         return sb;
     }
 
-    private static void sendArticlesToClient(Socket client, SocketConnection coordinator, Consistency type, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList, String[] message, ObjectInputStream clois, ObjectOutputStream cloos) {
+    private static void sendArticlesToClient(Consistency type, HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList,ObjectOutputStream cloos, int flag) {
         //Send the whole object to the client
         ObjectOutputStream output = null;
         try {
-            /*
-                The following dummy entries has to be deleted before submitting
+
+            /**
+             * Get updated articleList after contacting Nr servers
              */
-//            articleList.put(0,"Dummy article");
-//            ArrayList<Integer> dummyList = new ArrayList<>();
-//            dummyList.add(0);
-//            dependencyList.put(1, dummyList);
-            if(type.equals(Consistency.SEQUENTIAL)) {
-              //  output = new ObjectOutputStream(client.getOutputStream());
-                output = cloos;
-                output.writeObject(Server.articleList);
-                output.writeObject(Server.dependencyList);
-                output.reset();
-                System.out.println("Sent to Client: Article: " + Server.articleList + " Dependency: " + dependencyList);
+            if(flag==0 && (type.equals(Consistency.QUORUM) || type.equals(Consistency.READ_YOUR_WRITE)) ) {
+                ServerHelper.synch();
             }
-            else if(type.equals(Consistency.QUORUM)){
-                ServerHelper.sendReadToCoordinator(coordinator,message);
-            }
-        } catch (IOException e) {
+
+            output = cloos;
+            output.writeObject(Server.articleList);
+            output.writeObject(Server.dependencyList);
+            output.reset();
+            System.out.println("Sent to Client: Article: " + Server.articleList + " Dependency: " + Server.dependencyList);
+
+        } catch (IOException | ClassNotFoundException e) {
             System.out.println("Can't send message back to the client");
         }
     }
 
-    public static void sendMessageToClient (Socket socket, String message, ObjectOutputStream objectOutputStream, ObjectInputStream ois){
+
+    public static void sendMessageToClient (ObjectOutputStream socket, String message){
         //Send the string message to the client
-        ObjectOutputStream output = objectOutputStream;
         try {
-            //output = new ObjectOutputStream(socket.getOutputStream());
-            output.writeObject(message);
-            System.out.println("Sent the article to Client");
+            socket.writeObject(message);
+            socket.reset();
+            System.out.println("Sent the article to Client: " + message);
 
         } catch (IOException e) {
             System.out.println("Can't send message back to the client");
@@ -308,21 +333,16 @@ public class ServerHelper {
     }
 
 
-    public static void receiveMessagefromCoordinator (SocketConnection socket, String[] message){
-
-        //TODO read DS from coordinator
-
-        /*
-            process message to do the needful
-         */
+    public static void receiveMessagefromCoordinator (SocketConnection socket){
 
         ObjectInputStream objectInputStream = null;
         try {
             objectInputStream = socket.getOis();
             String readMesage = (String) objectInputStream.readObject();
+
             String dependency = (String) objectInputStream.readObject();
-            System.out.println("dpen list " + dependency);
             HashMap<Integer, ArrayList<Integer>> dependencyList = convertToMap(dependency);
+
             System.out.println("Message from Coordiantor" + readMesage);
             String [] rec = readMesage.split(" ");
             String msg = "";
@@ -330,6 +350,7 @@ public class ServerHelper {
                 msg += rec[i];
             }
             Server.articleList.put(Integer.parseInt(rec[0]), msg);
+
             System.out.println("Message from coordinator::: "+dependencyList);
             if(dependencyList!=null)
                 Server.dependencyList.putAll(dependencyList);
@@ -340,8 +361,6 @@ public class ServerHelper {
             System.out.println("Couldn't convert the message received from coordinator");
         }
 
-
-        //TODO is it not getting updated. LEt us do a end to end testing tonight.
         //How am I suppose to update the dependency list and articleList? I am Garima FYI
 //        updateArticleAndDependencyList()
     }

@@ -1,15 +1,10 @@
-import javafx.util.Pair;
-
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Coordinator {
 
@@ -17,6 +12,7 @@ public class Coordinator {
     static volatile HashMap<String, String> serverMessageQueue;
     static volatile int ID;
     static volatile ArrayList<SocketConnection> serverSockets;
+    static volatile ConcurrentHashMap<String, Integer> readWriteNumbers;
     Consistency type;
 
     public Coordinator(int port) {
@@ -38,25 +34,26 @@ public class Coordinator {
 
         System.out.println("Starting Coordinator and implementing " + type.toString() + " Consistency");
         ServerSocket coordinator;
+
         try {
             coordinator = new ServerSocket(port);
+            readWriteNumbers = CoordinatorHelper.getReadAndWriteServers();
+
             while(true){
-                Socket server = null;
+                Socket server;
                 try {
                     server = coordinator.accept();
-//                    ObjectOutputStream oos = new ObjectOutputStream(server.getOutputStream());
-//                    ObjectInputStream ois = new ObjectInputStream(server.getInputStream());
                     SocketConnection sc = new SocketConnection(server);
                     Thread serverResponder = new ServerResponder(sc,type);
                     serverResponder.start();
-
 
                 } catch (IOException e) {
                     System.out.println("Error in the Coordinator sockets while accepting server");
                 }
             }
         } catch (IOException e) {
-            System.out.println("Couldn't create connection with server");
+            System.out.println("File ot found" );
+//            e.printStackTrace();
         }
 
     }

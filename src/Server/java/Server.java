@@ -1,7 +1,4 @@
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -16,34 +13,36 @@ public class Server {
     ServerSocket server;
     Consistency type;
 
-    public Server(int port, String arg) {
+    public Server(int port) {
 
         articleList = new HashMap<Integer, String>();
         dependencyList = new HashMap<Integer, ArrayList<Integer>>();
-        type = Enum.valueOf(Consistency.class,arg);
         server = null;
-        Thread syncthread = null;
-        if(Consistency.QUORUM == type) {
-            syncthread = new QuorumSyncThread();
-            new Thread(syncthread).start();
-        }
+
         try {
             coordinatorSocket = new SocketConnection(8001);
             server = new ServerSocket(port);
             type = ServerHelper.getConsistencyType(coordinatorSocket);
             System.out.println(type.toString());
+            if(type.equals(Consistency.QUORUM) || type.equals(Consistency.READ_YOUR_WRITE)) {
+                coordinatorSocket.getOos().writeObject(1);
+            }
+            Thread syncthread = null;
+//            if(Consistency.QUORUM == type) {
+//                syncthread = new QuorumSyncThread();
+//                new Thread(syncthread).start();
+//            }
             while(true) {
 
                 Socket client = null;
                 try {
                     client = server.accept();
-                    ObjectOutputStream clOos = new ObjectOutputStream(client.getOutputStream());
-                    ObjectInputStream clOis = new ObjectInputStream(client.getInputStream());
-                    Thread clientResponder = new ClientResponder(client,coordinatorSocket, type, clOis, clOos);
+                    SocketConnection sc = new SocketConnection(client);
+                    Thread clientResponder = new ClientResponder(sc,coordinatorSocket, type);
                     clientResponder.start();
                 } catch (IOException e) {
                     client.close();
-                    ((QuorumSyncThread) syncthread).stopSync();
+//                    ((QuorumSyncThread) syncthread).stopSync();
                     System.out.println("Error in the server sockets while accepting clients");
                 }
             }
@@ -56,6 +55,6 @@ public class Server {
     }
     public static void main(String[] args)  {
 
-        Server server = new Server(8000, "SEQUENTIAL");
+        Server server = new Server(Integer.parseInt(args[0]));
     }
 }
