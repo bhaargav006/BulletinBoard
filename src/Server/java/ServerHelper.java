@@ -4,7 +4,8 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+
+
 
 public class ServerHelper {
     public static String[] receiveMessageFromClient(ObjectInputStream in) {
@@ -153,6 +154,7 @@ public class ServerHelper {
             s.close();
         }
 
+        System.out.println("Sync: I'm done");
     }
 
     public static void updateArticleList(int articleId, String content) {
@@ -167,7 +169,7 @@ public class ServerHelper {
         Server.dependencyList.put(articleId, arr);
     }
 
-    public static void processMessageFromClient(SocketConnection client, SocketConnection coordinator, Consistency type, String[] message, HashMap<Integer,String> articleList, HashMap<Integer,ArrayList<Integer>> dependencyList, ObjectOutputStream clientOos, ObjectInputStream clientOis) throws IOException, ClassNotFoundException {
+    public static void processMessageFromClient(SocketConnection client, SocketConnection coordinator, Consistency type, String[] message, HashMap<Integer,String> articleList, HashMap<Integer,ArrayList<Integer>> dependencyList, ObjectOutputStream clientOos, ObjectInputStream clientOis)  {
         System.out.println("Client's request is " + message[0]);
         switch (message[0]) {
             case "Read":
@@ -175,7 +177,6 @@ public class ServerHelper {
                 break;
 
             case "Choose":
-
                 sendChosenArticle(clientOos, type, message[1], articleList);
                 break;
 
@@ -188,8 +189,10 @@ public class ServerHelper {
             case "getArticlesMap":
                 sendArticlesToClient(type, articleList, dependencyList, clientOos, 1);
                 break;
+
             case "Sync":
                 break;
+
             case "SyncArticles":
                 updateArticleList(Integer.parseInt(message[1]), message[2]);
                 break;
@@ -243,11 +246,9 @@ public class ServerHelper {
         try {
             ObjectOutputStream objectOutputStream = coordinator.getOos();//new ObjectOutputStream(coordinator.getOutputStream());
 
-//            objectOutputStream.writeObject(flag);
             objectOutputStream.writeObject(dependencyList);
             objectOutputStream.writeObject(sb.toString());
             System.out.println("Sent to Coordinator");
-            //receiveMessagefromCoordinator(coordinator);
 
         } catch (IOException e) {
             System.out.println("Error occurred while communicating with the Coordinator");
@@ -316,10 +317,11 @@ public class ServerHelper {
             output.writeObject(Server.articleList);
             output.writeObject(Server.dependencyList);
             output.reset();
-            System.out.println("Sent to Client: Article: " + Server.articleList + " Dependency: " + Server.dependencyList);
+            if(flag==0)
+                System.out.println("Sent to Client: Article: " + Server.articleList + " Dependency: " + Server.dependencyList);
 
         } catch (IOException | ClassNotFoundException e) {
-            System.out.println("Can't send message back to the client");
+            System.out.println("Can't send articles back to the client");
         }
     }
 
@@ -348,7 +350,7 @@ public class ServerHelper {
             String dependency = (String) objectInputStream.readObject();
             HashMap<Integer, ArrayList<Integer>> dependencyList = convertToMap(dependency);
 
-            System.out.println("Message from Coordiantor" + readMesage);
+            System.out.println("Message from Coordinator" + readMesage);
             String [] rec = readMesage.split(" ");
             String msg = "";
             for(int i = 1; i < rec.length; i++) {

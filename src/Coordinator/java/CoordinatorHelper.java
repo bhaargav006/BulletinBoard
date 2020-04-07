@@ -15,9 +15,9 @@ public class CoordinatorHelper {
         prop.load(fileInputStream);
         Enumeration enumeration = prop.keys();
         listOfServers.add(prop.getProperty("server1").split(":")[1]);
-//        listOfServers.add(prop.getProperty("server2").split(":")[1]);
-//        listOfServers.add(prop.getProperty("server3").split(":")[1]);
-//        listOfServers.add(prop.getProperty("server4").split(":")[1]);
+        listOfServers.add(prop.getProperty("server2").split(":")[1]);
+        listOfServers.add(prop.getProperty("server3").split(":")[1]);
+        listOfServers.add(prop.getProperty("server4").split(":")[1]);
 
         return listOfServers;
     }
@@ -49,6 +49,7 @@ public class CoordinatorHelper {
 
     public static Pair<String, HashMap<Integer, ArrayList<Integer>>> processMessageReceivedFromServer(Socket server, String message, HashMap<Integer, ArrayList<Integer>> dependencyList, int id) {
         // Gets the latest ID depending on whether it is post or reply.
+        System.out.println("Message from server is : " + message);
         String[] messageReceived = null;
         int latestID;
         String result = "";
@@ -82,12 +83,13 @@ public class CoordinatorHelper {
         return latestID;
     }
 
-    public static void broadcastMessageToServers(String message, HashMap<Integer, ArrayList<Integer>> dependencyList, ArrayList<SocketConnection> writeServers) {
+    public static void broadcastMessageToServers(String message, HashMap<Integer, ArrayList<Integer>> dependencyList, int writeServers) {
         System.out.println(dependencyList);
         String dl = convertToString(dependencyList);
         try {
-            for (SocketConnection server : writeServers) {
-                SocketConnection temp = new SocketConnection(8000);
+            ArrayList<String> serverIPAndPort = CoordinatorHelper.getServerIPAndPort();
+            for (int i= 0; i<writeServers;i++) {
+                SocketConnection temp = new SocketConnection(Integer.parseInt(serverIPAndPort.get(i)));
                 ObjectOutputStream objectOutputStream = temp.getOos();
                 String[] tempMsg= {"Update"};
                 objectOutputStream.writeObject(tempMsg);

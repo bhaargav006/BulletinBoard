@@ -8,7 +8,7 @@ public class ClientHelper {
     public static void sendMessageToServer(SocketConnection socket, String[] message, int flag) throws IOException {
         socket.getOos().writeObject(message);
         System.out.println("Request Sent to Server");
-
+        System.out.println("Please wait as your request is being processed.........");
         try {
             Thread.sleep(5000);
         } catch (InterruptedException e) {
@@ -54,7 +54,10 @@ public class ClientHelper {
         int i = 1;
         boolean[] visitedArray = new boolean[articleList.size()];
         result = "";
+        System.out.println();
+        System.out.println("***********BULLETIN BOARD CONTENTS*************");
         createString(articleList, dependencyList,visitedArray, i,0);
+        System.out.println();
     }
     public static int printFive(int i) {
         String [] r = result.split("\n");
@@ -72,6 +75,7 @@ public class ClientHelper {
 
     static String result = "";
     private static void createString(HashMap<Integer, String> articleList, HashMap<Integer, ArrayList<Integer>> dependencyList, boolean[] visitedArray, int index, int spaces) {
+
         if(index > articleList.size()){
             return;
         }

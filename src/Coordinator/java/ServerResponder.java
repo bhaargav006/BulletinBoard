@@ -15,7 +15,6 @@ public class ServerResponder extends Thread {
     public ServerResponder(SocketConnection server, Consistency type){
         this.server = server;
         this.type = type;
-        Coordinator.serverSockets.add(server);
         this.oos = server.getOos();
         this.ois = server.getOis();
     }
@@ -27,14 +26,15 @@ public class ServerResponder extends Thread {
             switch (type) {
                 case SEQUENTIAL: {
                     if((int)server.getOis().readObject() !=0) {
-
+                        break;
                     }
+                    Coordinator.serverSockets.add(server);
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.SEQUENTIAL.toString(), oos);
                     while (!type.equals(Consistency.ERROR)) {
 
                         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
                         Pair<String, HashMap<Integer, ArrayList<Integer>>> newPair = CoordinatorHelper.processMessageReceivedFromServer(server.getSocket(),pair.getKey(), pair.getValue(), Coordinator.ID);
-                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue(), Coordinator.serverSockets);
+                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue(), Coordinator.serverSockets.size());
                     }
                     server.close();
                     System.out.println("Socket Closed");
@@ -46,7 +46,9 @@ public class ServerResponder extends Thread {
                         server.getOos().writeObject(Coordinator.ID);
                         server.getOos().reset();
                         server.close();
+                        break;
                     }
+                    Coordinator.serverSockets.add(server);
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.QUORUM.toString(), oos);
                     while (!type.equals(Consistency.ERROR)) {
 
@@ -59,10 +61,9 @@ public class ServerResponder extends Thread {
                             break;
                         }
 
-                        ArrayList<SocketConnection> writeServers = CoordinatorHelper.getWriteServers(Coordinator.readWriteNumbers.get("Write"));
                         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
                         Pair<String, HashMap<Integer, ArrayList<Integer>>> newPair = CoordinatorHelper.processMessageReceivedFromServer(server.getSocket(), pair.getKey(), pair.getValue(), Coordinator.ID);
-                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue(), writeServers);
+                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue(), Coordinator.readWriteNumbers.get("Write"));
 
                     }
                     server.close();
@@ -75,12 +76,14 @@ public class ServerResponder extends Thread {
                         server.getOos().writeObject(Coordinator.ID);
                         server.getOos().reset();
                         server.close();
+                        break;
                     }
+                    Coordinator.serverSockets.add(server);
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.READ_YOUR_WRITE.toString(), oos);
                     while (!type.equals(Consistency.ERROR)) {
                         Pair<String, HashMap<Integer, ArrayList<Integer>>> pair = CoordinatorHelper.receiveMessageFromServer(server);
                         Pair<String, HashMap<Integer, ArrayList<Integer>>> newPair = CoordinatorHelper.processMessageReceivedFromServer(server.getSocket(),pair.getKey(), pair.getValue(), Coordinator.ID);
-                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue(), Coordinator.serverSockets);
+                        CoordinatorHelper.broadcastMessageToServers(newPair.getKey(), newPair.getValue(), Coordinator.serverSockets.size());
                     }
                     server.close();
                     break;

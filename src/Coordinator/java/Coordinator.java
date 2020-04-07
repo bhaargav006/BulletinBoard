@@ -53,7 +53,7 @@ public class Coordinator {
             }
         } catch (IOException e) {
             System.out.println("File not found" +e );
-//            e.printStackTrace();
+            e.printStackTrace();
         }
 
     }
