@@ -38,7 +38,7 @@ public class ClientResponder extends Thread {
                     }
                     case QUORUM: {
                         String[] qmessage = ServerHelper.receiveMessageFromClient(clientOis);
-                        System.out.println("Request Type : " + qmessage);
+                        System.out.println("Request Type : " + qmessage[0]);
                         ServerHelper.processMessageFromClient(client, coordinator, type, qmessage, Server.articleList, Server.dependencyList, clientOos, clientOis);
                         break;
                     }
