@@ -22,11 +22,12 @@ public class Server {
         try {
             coordinatorSocket = new SocketConnection(8001);
             server = new ServerSocket(port);
+            coordinatorSocket.getOos().writeObject(1);
             type = ServerHelper.getConsistencyType(coordinatorSocket);
             System.out.println(type.toString());
-            if(type.equals(Consistency.QUORUM) || type.equals(Consistency.READ_YOUR_WRITE)) {
-                coordinatorSocket.getOos().writeObject(1);
-            }
+//            if(type.equals(Consistency.QUORUM) || type.equals(Consistency.READ_YOUR_WRITE)) {
+//                coordinatorSocket.getOos().write(1);
+//            }
             Thread syncthread = null;
 //            if(Consistency.QUORUM == type) {
 //                syncthread = new QuorumSyncThread();

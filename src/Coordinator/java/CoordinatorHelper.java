@@ -9,15 +9,15 @@ public class CoordinatorHelper {
 
     public static ArrayList<String> getServerIPAndPort() throws IOException {
         ArrayList<String> listOfServers = new ArrayList<>();
-        File file = new File("serverList.properties");
+        File file = new File("src/serverList.properties");
         FileInputStream fileInputStream = new FileInputStream(file);
         Properties prop = new Properties();
         prop.load(fileInputStream);
         Enumeration enumeration = prop.keys();
         listOfServers.add(prop.getProperty("server1").split(":")[1]);
-        listOfServers.add(prop.getProperty("server2").split(":")[1]);
-        listOfServers.add(prop.getProperty("server3").split(":")[1]);
-        listOfServers.add(prop.getProperty("server4").split(":")[1]);
+//        listOfServers.add(prop.getProperty("server2").split(":")[1]);
+//        listOfServers.add(prop.getProperty("server3").split(":")[1]);
+//        listOfServers.add(prop.getProperty("server4").split(":")[1]);
 
         return listOfServers;
     }
@@ -37,7 +37,6 @@ public class CoordinatorHelper {
 //                message = (String) objectInputStream.readObject();
 //                return new Pair<>(message, null);
 //            }
-
             dependencyList = (HashMap) objectInputStream.readObject();
             message = (String) objectInputStream.readObject();
 //            System.out.println("Ffrom server:" + message + " " + dependencyList);

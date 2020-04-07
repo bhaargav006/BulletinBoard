@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerHelper {
     public static String[] receiveMessageFromClient(ObjectInputStream in) {
@@ -26,8 +27,12 @@ public class ServerHelper {
      * servers can get out of synch, to bring each replica up to date with each other,
      * we periodically call synch
      */
-    public static void synch() throws IOException, ClassNotFoundException {
+    public static void synch(int r) throws IOException, ClassNotFoundException {
         ArrayList<String> serverIPAndPort = CoordinatorHelper.getServerIPAndPort();
+        ArrayList<String> nRPorts = new ArrayList<>();
+        for(int i = 0; i < r; i++) {
+            nRPorts.add(serverIPAndPort.get(i));
+        }
         InetAddress chost = InetAddress.getLocalHost();
         //get max id from coordinator
         int cport = 8001; //set port of coordinator
@@ -213,7 +218,7 @@ public class ServerHelper {
 
         if(type.equals(Consistency.QUORUM) || type.equals(Consistency.READ_YOUR_WRITE)) {
             try {
-                ServerHelper.synch();
+                ServerHelper.synch(CoordinatorHelper.getReadAndWriteServers().get("Read"));
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {
@@ -304,9 +309,10 @@ public class ServerHelper {
              * Get updated articleList after contacting Nr servers
              */
             if(flag==0 && (type.equals(Consistency.QUORUM) || type.equals(Consistency.READ_YOUR_WRITE)) ) {
-                ServerHelper.synch();
+                int r = CoordinatorHelper.getReadAndWriteServers().get("Read");
+                ServerHelper.synch(r);
             }
-
+            System.out.println("Sync worked");
             output = cloos;
             output.writeObject(Server.articleList);
             output.writeObject(Server.dependencyList);

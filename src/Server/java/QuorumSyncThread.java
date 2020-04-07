@@ -8,7 +8,7 @@ public class QuorumSyncThread extends  Thread {
         while(!stop) {
             try {
                 sleep(10000);
-                ServerHelper.synch();
+                ServerHelper.synch(2);
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {

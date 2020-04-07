@@ -26,6 +26,9 @@ public class ServerResponder extends Thread {
 
             switch (type) {
                 case SEQUENTIAL: {
+                    if((int)server.getOis().readObject() !=0) {
+
+                    }
                     CoordinatorHelper.sendConsistencyTypeToServers(server.getSocket(), Consistency.SEQUENTIAL.toString(), oos);
                     while (!type.equals(Consistency.ERROR)) {
 
