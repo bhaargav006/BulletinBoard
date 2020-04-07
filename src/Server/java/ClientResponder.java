@@ -44,9 +44,10 @@ public class ClientResponder extends Thread {
                     }
                     case READ_YOUR_WRITE:
                         String[] clientMessage = ServerHelper.receiveMessageFromClient(clientOis);
+                        System.out.println("Message "+clientMessage[0]);
                         try {
                             ServerHelper.processMessageFromClient(client, coordinator, type, clientMessage, Server.articleList, Server.dependencyList, clientOos, clientOis);
-                            ServerHelper.receiveMapsfromCoordinator(coordinator);
+                         //   ServerHelper.receiveMapsfromCoordinator(coordinator);
                         } catch (IOException | ClassNotFoundException e1) {
                             e1.printStackTrace();
                         }
