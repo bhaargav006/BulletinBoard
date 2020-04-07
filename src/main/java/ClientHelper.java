@@ -1,17 +1,23 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ClientHelper {
     public static void sendMessageToServer(SocketConnection socket, String[] message, int flag) throws IOException {
         socket.getOos().writeObject(message);
-        System.out.println("Sent to Socket");
+        System.out.println("Sent to Server");
+
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            System.out.println("Thread is not waking up");
+        }
+        //Choose
         if(flag==1)
             receiveMessageFromServer(socket, 0);
-        if(flag==2)
+        //Read
+        else if(flag==2)
             receiveMessageFromServer(socket, 1);
     }
 
@@ -19,24 +25,20 @@ public class ClientHelper {
 
         HashMap<Integer, String> articleList = null;
         HashMap<Integer, ArrayList<Integer>> dependencyList = null;
-        String choose = null;
+        String choose;
         try {
-            System.out.println("I'm here too");
-            //ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+
             ObjectInputStream in = socket.getOis();
-            System.out.println("falg" + flag);
             if(flag==0){
                 choose= (String) in.readObject();
-                System.out.println(choose);
+                System.out.println("The article is: " + choose);
             }
             else if(flag==1){
                 articleList = (HashMap) in.readObject();
                 dependencyList = (HashMap) in.readObject();
-                System.out.println("Got articleList and dependencyList from the server" + articleList.size() + dependencyList.size());
                 readArticles(articleList, dependencyList);
             }
 
-            //in.close();
 
         } catch (IOException e1) {
             System.out.println("Error while receiving message from Server");
@@ -50,7 +52,6 @@ public class ClientHelper {
         int i = 1;
         boolean[] visitedArray = new boolean[articleList.size()];
         createString(articleList, dependencyList,visitedArray, i,0);
-        //Do a DFS
     }
 
 
@@ -70,7 +71,7 @@ public class ClientHelper {
            // System.out.print("\t");
             for(int i = 0; i < childList.size(); i++){
                 if(visitedArray[childList.get(i) - 1] == false){
-                    for(int t = 0; t <=git  spaces; t++) System.out.print("\t");
+                    for(int t = 0; t <=spaces; t++) System.out.print("\t");
                     System.out.print(childList.get(i) +". " +articleList.get(childList.get(i)));
                     System.out.println();
                     visitedArray[childList.get(i) - 1] = true;

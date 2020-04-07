@@ -1,9 +1,4 @@
-import javax.xml.bind.SchemaOutputResolver;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
@@ -15,10 +10,8 @@ public class Client {
         System.out.println("");
         String message = "";
         //TODO: Change the data sent based on the input from the user
-        InetAddress host = InetAddress.getLocalHost();
         try {
-            SocketConnection socketConnection = new SocketConnection(8000);
-            SocketConnection socketConnection1 = new SocketConnection(8000);
+            SocketConnection socketConnection = new SocketConnection(Integer.parseInt(args[0]));
             Boolean exit = true;
             while(exit){
                 System.out.println("[P] Post \n[R] Read \n[C] Choose \n[Rep] Reply \n");
@@ -34,9 +27,12 @@ public class Client {
                     case "R":
                         message = "Read";
                         break;
-                    case "C":
-                        message = "Choose 0";
+                    case "C": {
+                        System.out.print("Enter Article Id:\n");
+                        String id = in.nextLine();
+                        message = "Choose " + id;
                         break;
+                    }
                     case "Rep":
                         System.out.println("Enter Article Id");
                         String id = in.nextLine();
@@ -45,7 +41,7 @@ public class Client {
                         message = "Reply " +id +" " +msg;
                         break;
                     case "Exit":
-                       // socket.close();
+                        socketConnection.close();
                         exit = false;
                         break;
                     default:
