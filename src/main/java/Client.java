@@ -11,7 +11,7 @@ public class Client {
         String message = "";
         //TODO: Change the data sent based on the input from the user
         try {
-            SocketConnection socketConnection = new SocketConnection(Integer.parseInt(args[0]));
+            SocketConnection socketConnection = new SocketConnection(8000);
             Boolean exit = true;
             while(exit){
                 System.out.println("[P] Post \n[R] Read \n[C] Choose \n[Rep] Reply \n");
@@ -27,6 +27,7 @@ public class Client {
                     case "R":
                         message = "Read";
                         break;
+
                     case "C": {
                         System.out.print("Enter Article Id:\n");
                         String id = in.nextLine();

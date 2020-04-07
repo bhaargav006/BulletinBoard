@@ -119,7 +119,7 @@ public class CoordinatorHelper {
 
     public static ConcurrentHashMap<String, Integer> getReadAndWriteServers() throws IOException {
         ConcurrentHashMap<String, Integer> readWriteServers = new ConcurrentHashMap<String, Integer>();
-        File file = new File("serverList.properties");
+        File file = new File("src/serverList.properties");
         FileInputStream fileInputStream = new FileInputStream(file);
         Properties prop = new Properties();
         prop.load(fileInputStream);

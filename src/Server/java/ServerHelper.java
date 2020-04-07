@@ -171,6 +171,7 @@ public class ServerHelper {
                 break;
 
             case "Choose":
+
                 sendChosenArticle(clientOos, type, message[1], articleList);
                 break;
 
@@ -204,6 +205,7 @@ public class ServerHelper {
 
 
 
+
     private static void sendChosenArticle(ObjectOutputStream client, Consistency type, String ID, HashMap<Integer, String> articleList) {
 
         Integer articleID = Integer.parseInt(ID);
@@ -221,8 +223,8 @@ public class ServerHelper {
         String article = articleList.get(articleID);
         if (article == null || article == "")
             article = "Invalid article ID. There is no such article";
-        sendMessageToClient(client, article);
 
+        sendMessageToClient(client, article);
 
     }
 
@@ -315,6 +317,7 @@ public class ServerHelper {
             System.out.println("Can't send message back to the client");
         }
     }
+
 
     public static void sendMessageToClient (ObjectOutputStream socket, String message){
         //Send the string message to the client

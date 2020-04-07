@@ -55,7 +55,7 @@ public class ClientResponder extends Thread {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("No Cle");
         }
 
     }

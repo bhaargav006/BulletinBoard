@@ -52,7 +52,7 @@ public class Coordinator {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Couldn't create connection with server" );
+            System.out.println("File ot found" );
 //            e.printStackTrace();
         }
 
