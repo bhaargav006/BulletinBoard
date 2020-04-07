@@ -18,7 +18,6 @@ public class Client {
         InetAddress host = InetAddress.getLocalHost();
         try {
             SocketConnection socketConnection = new SocketConnection(8000);
-            SocketConnection socketConnection1 = new SocketConnection(8000);
             Boolean exit = true;
             while(exit){
                 System.out.println("[P] Post \n[R] Read \n[C] Choose \n[Rep] Reply \n");
@@ -35,7 +34,9 @@ public class Client {
                         message = "Read";
                         break;
                     case "C":
-                        message = "Choose 0";
+                        System.out.println("Enter Article Id:\n");
+                        String art = in.nextLine();
+                        message = "Choose "+Integer.parseInt(art);
                         break;
                     case "Rep":
                         System.out.println("Enter Article Id");

@@ -163,7 +163,7 @@ public class ServerHelper {
                 break;
 
             case "Choose":
-            //    sendChosenArticle(client, coordinator, message[1], articleList);
+                sendChosenArticle(client, coordinator, message[1], articleList, clientOos, clientOis);
                 break;
 
             case "Post":
@@ -190,15 +190,14 @@ public class ServerHelper {
 
 
 
-    private static void sendChosenArticle(Socket client, Socket coordinator, String ID, HashMap<Integer, String> articleList) {
+    private static void sendChosenArticle(Socket client, SocketConnection coordinator, String ID, HashMap<Integer, String> articleList, ObjectOutputStream oos, ObjectInputStream ois) {
         //TODO send a redRequest to coordinator in the case of Quorum
-        articleList.put(0,"Dummy article");
         Integer articleID = Integer.parseInt(ID);
         System.out.println("Article ID is " + articleID);
         String article = articleList.get(articleID);
         if (article == null || article == "")
             article = "Invalid article ID. There is no such article";
-        sendMessageToClient(client, article);
+        sendMessageToClient(client, article, oos, ois);
     }
 
     private static void sendWriteToCoordinator(SocketConnection coordinator, String[] message, HashMap<Integer, ArrayList<Integer>> dependencyList)  {
@@ -294,11 +293,11 @@ public class ServerHelper {
         }
     }
 
-    public static void sendMessageToClient (Socket socket, String message){
+    public static void sendMessageToClient (Socket socket, String message, ObjectOutputStream objectOutputStream, ObjectInputStream ois){
         //Send the string message to the client
-        ObjectOutputStream output = null;
+        ObjectOutputStream output = objectOutputStream;
         try {
-            output = new ObjectOutputStream(socket.getOutputStream());
+            //output = new ObjectOutputStream(socket.getOutputStream());
             output.writeObject(message);
             System.out.println("Sent the article to Client");
 
