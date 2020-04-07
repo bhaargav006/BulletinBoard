@@ -24,6 +24,7 @@ public class ServerHelper {
     /***
      * servers can get out of synch, to bring each replica up to date with each other,
      * we periodically call synch
+     * r: it is the number of numbers that have to be sync together
      */
     public static void synch(int r) throws IOException, ClassNotFoundException {
         ArrayList<String> serverIPAndPort = CoordinatorHelper.getServerIPAndPort();
@@ -47,7 +48,7 @@ public class ServerHelper {
         HashMap<String, ObjectOutputStream> outputStreamHashMap = new HashMap<>();
         HashMap<Integer, ArrayList<Integer>> globaldependencyMap = new HashMap<>();
         List<Socket> sockets = new ArrayList<>();
-        for (String serv : serverIPAndPort) {
+        for (String serv : nRPorts) {
             Socket socket = new Socket(InetAddress.getLocalHost(), Integer.parseInt(serv));
             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
@@ -121,7 +122,7 @@ public class ServerHelper {
             }
         }
 
-        for (String serv : serverIPAndPort) {
+        for (String serv : nRPorts) {
             List<Integer> ids = missingArticleMapForEachServer.get(serv);
             if (ids != null){
                 for (int id : ids) {
