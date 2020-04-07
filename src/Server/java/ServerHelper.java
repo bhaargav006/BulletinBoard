@@ -3,10 +3,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerHelper {
@@ -85,6 +82,8 @@ public class ServerHelper {
                     if (globaldependencyMap.containsKey(arId)) {
                         ArrayList<Integer> children = globaldependencyMap.get(arId);
                         ArrayList<Integer> localChild = (ArrayList<Integer>) dependency.getValue();
+                        Collections.sort(children);
+                        Collections.sort(localChild);
                         int lenOfChildren = children.size();
                         int lenOfLocalChildren = localChild.size();
                         ArrayList<Integer> resChild = new ArrayList<>();
@@ -92,24 +91,24 @@ public class ServerHelper {
                         int b = 0;
                         while (a < lenOfChildren || b < lenOfLocalChildren) {
                             if (a >= lenOfChildren) {
-                                resChild.add(b);
+                                resChild.add(localChild.get(b));
                                 b++;
                                 continue;
                             }
                             if (b >= lenOfChildren) {
-                                resChild.add(a);
+                                resChild.add(children.get(a));
                                 a++;
                                 continue;
                             }
                             if (children.get(a).equals(localChild.get(b))) {
-                                resChild.add(a);
+                                resChild.add(children.get(a));
                                 a++;
                                 b++;
                             } else if (children.get(a) < localChild.get(b)) {
-                                resChild.add(a);
+                                resChild.add(children.get(a));
                                 a++;
                             } else {
-                                resChild.add(b);
+                                resChild.add(localChild.get(b));
                                 b++;
                             }
                         }
@@ -132,7 +131,7 @@ public class ServerHelper {
                 }
             }
         }
-
+        System.out.println(globaldependencyMap);
         if(globaldependencyMap!=null) {
             for (String serv : serverIPAndPort) {
                 ObjectOutputStream oos = outputStreamHashMap.get(serv);
