@@ -135,7 +135,7 @@ public class ServerHelper {
         }
         System.out.println(globaldependencyMap);
         if(globaldependencyMap!=null) {
-            for (String serv : serverIPAndPort) {
+            for (String serv : nRPorts) {
                 ObjectOutputStream oos = outputStreamHashMap.get(serv);
                 for (Map.Entry e : globaldependencyMap.entrySet()) {
                     int arId = (int) e.getKey();
@@ -168,6 +168,7 @@ public class ServerHelper {
         for (String id : ids)
             arr.add(Integer.parseInt(id));
         Server.dependencyList.put(articleId, arr);
+        System.out.println("Printing Dependency List: " + Server.dependencyList);
     }
 
     public static void processMessageFromClient(SocketConnection client, SocketConnection coordinator, Consistency type, String[] message, HashMap<Integer,String> articleList, HashMap<Integer,ArrayList<Integer>> dependencyList, ObjectOutputStream clientOos, ObjectInputStream clientOis)  {

@@ -29,10 +29,10 @@ public class Server {
 //                coordinatorSocket.getOos().write(1);
 //            }
             Thread syncthread = null;
-//            if(Consistency.QUORUM == type) {
-//                syncthread = new QuorumSyncThread();
-//                new Thread(syncthread).start();
-//            }
+            if(Consistency.QUORUM == type) {
+                syncthread = new QuorumSyncThread();
+                new Thread(syncthread).start();
+            }
             while(true) {
 
                 Socket client = null;
