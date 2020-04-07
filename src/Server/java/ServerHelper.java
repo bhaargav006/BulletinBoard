@@ -347,9 +347,9 @@ public class ServerHelper {
             String [] rec = readMesage.split(" ");
             String msg = "";
             for(int i = 1; i < rec.length; i++) {
-                msg += rec[i];
+                msg += rec[i] + " ";
             }
-            Server.articleList.put(Integer.parseInt(rec[0]), msg);
+            Server.articleList.put(Integer.parseInt(rec[0]), msg.trim());
 
             System.out.println("Message from coordinator::: "+dependencyList);
             if(dependencyList!=null)
