@@ -25,7 +25,7 @@ public class ServerResponder extends Thread {
 
             switch (type) {
                 case SEQUENTIAL: {
-                    if((int)server.getOis().readObject() !=0) {
+                    if((int)server.getOis().readObject() !=1) {
                         break;
                     }
                     Coordinator.serverSockets.add(server);
